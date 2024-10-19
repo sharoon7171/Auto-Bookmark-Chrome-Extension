@@ -143,3 +143,54 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     handleTab(tab);
   }
 });
+
+function executeRules(url, isManual = false) {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['rules', 'enabled'], (data) => {
+      if (!data.enabled && !isManual) {
+        resolve(false);
+        return;
+      }
+
+      const rules = data.rules || [];
+      console.log('Executing rules for URL:', url);
+      console.log('Available rules:', rules);
+
+      const matchingRule = rules.find(rule => 
+        (rule.domain && url.includes(rule.domain)) || 
+        (rule.contains && url.includes(rule.contains))
+      );
+
+      if (matchingRule) {
+        console.log('Matching rule found:', matchingRule);
+        chrome.bookmarks.create({
+          parentId: matchingRule.bookmarkLocation,
+          title: url, // Using URL as title for simplicity
+          url: url
+        }, (newBookmark) => {
+          if (chrome.runtime.lastError) {
+            console.error('Error creating bookmark:', chrome.runtime.lastError);
+            resolve(false);
+          } else {
+            console.log('Bookmark created:', newBookmark);
+            resolve(true);
+          }
+        });
+      } else {
+        console.log('No matching rule found');
+        resolve(false);
+      }
+    });
+  });
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "manualExecute") {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      executeRules(tabs[0].url, true).then(result => {
+        sendResponse({success: result});
+      });
+    });
+    return true; // Indicates we will send a response asynchronously
+  }
+});
