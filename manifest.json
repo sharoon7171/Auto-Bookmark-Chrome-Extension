@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Auto Bookmark",
+  "version": "1.0",
+  "description": "The Auto Bookmark Chrome Extension lets users automatically or manually execute bookmarks based on specific domains or conditions.",
+  "permissions": [
+    "tabs",
+    "bookmarks",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html"
+}

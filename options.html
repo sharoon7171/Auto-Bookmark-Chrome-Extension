@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auto Bookmark Options</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .rule { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+    select, input { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>Auto Bookmark</h1>
+  <div id="globalOptions">
+    <label><input type="checkbox" id="extensionEnabled"> Enable Extension</label>
+    <label><input type="checkbox" id="autoBookmark"> Enable Automatic Bookmarking</label>
+    <label><input type="checkbox" id="autoCloseTab"> Enable Automatic Tab Closing</label>
+  </div>
+  <h2>Rules</h2>
+  <div id="rules"></div>
+  <button id="addRule">Add New Rule</button>
+  <script src="options.js"></script>
+</body>
+</html>
