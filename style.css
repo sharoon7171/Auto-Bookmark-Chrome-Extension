@@ -137,29 +137,22 @@ button:hover {
   overflow: hidden;
 }
 
-.rule-title-row {
-  display: flex;
-  background-color: #f1f3f4;
+.rule-title-row, .rule {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 2fr 2fr 2fr;
+  gap: 10px;
   padding: 10px;
+  align-items: center;
+}
+
+.rule-title-row {
+  background-color: #f1f3f4;
   font-weight: bold;
   border-bottom: 1px solid #dadce0;
 }
 
-.rule-title-row span {
-  flex: 1;
+.rule-title-row span, .rule > * {
   padding: 0 5px;
-}
-
-.rule {
-  display: flex;
-  padding: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.rule > * {
-  flex: 1;
-  margin: 0 5px;
 }
 
 .rule input[type="text"],
@@ -175,6 +168,7 @@ button:hover {
 
 .rule-options {
   display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -190,3 +184,24 @@ button:hover {
   border-radius: 4px;
   cursor: pointer;
 }
+
+/* Ensure the bookmark search doesn't overflow */
+.bookmark-search {
+  position: relative;
+  width: 100%;
+}
+
+.bookmark-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #dadce0;
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* ... rest of your existing CSS ... */
