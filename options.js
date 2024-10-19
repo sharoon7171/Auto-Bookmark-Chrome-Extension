@@ -104,7 +104,7 @@ function createRuleElement(rule, index) {
     searchResults.innerHTML = filteredFolders.map(folder => 
       `<div class="search-result" data-id="${folder.id}">${folder.title}</div>`
     ).join('');
-    searchResults.style.display = 'block';
+    searchResults.style.display = filteredFolders.length > 0 ? 'block' : 'none';
   }
 
   searchInput.addEventListener('focus', () => {
