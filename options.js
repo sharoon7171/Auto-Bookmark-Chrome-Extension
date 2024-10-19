@@ -59,9 +59,9 @@ function createRuleElement(rule, index) {
   const titleRow = document.createElement('div');
   titleRow.className = 'rule-title-row';
   titleRow.innerHTML = `
-    <span>Domain</span>
-    <span>Contains</span>
-    <span>Priority</span>
+    <span>URL Domain</span>
+    <span>URL Contains</span>
+    <span>Rule Priority</span>
     <span>Bookmark Folder</span>
     <span>Action</span>
     <span>Options</span>
@@ -72,9 +72,9 @@ function createRuleElement(rule, index) {
   const ruleInputRow = document.createElement('div');
   ruleInputRow.className = 'rule';
   ruleInputRow.innerHTML = `
-    <input type="text" placeholder="Domain" value="${rule.domain || ''}" data-field="domain">
-    <input type="text" placeholder="Contains" value="${rule.contains || ''}" data-field="contains">
-    <input type="number" placeholder="Priority" value="${rule.priority || 0}" data-field="priority">
+    <input type="text" placeholder="e.g., example.com" value="${rule.domain || ''}" data-field="domain">
+    <input type="text" placeholder="e.g., article, product" value="${rule.contains || ''}" data-field="contains">
+    <input type="number" placeholder="0-100 (higher = more important)" value="${rule.priority || 0}" data-field="priority" min="0" max="100">
     <div class="bookmark-search">
       <input type="text" placeholder="Search bookmark folders" class="bookmark-search-input" data-field="bookmarkLocation" value="${getFolderName(rule.bookmarkLocation)}" data-selected-id="${rule.bookmarkLocation || ''}">
       <div class="bookmark-search-results"></div>
@@ -85,9 +85,21 @@ function createRuleElement(rule, index) {
       <option value="duplicate" ${rule.bookmarkAction === 'duplicate' ? 'selected' : ''}>Add Duplicate Bookmark</option>
     </select>
     <div class="rule-options">
-      <label><input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled"> Enable</label>
-      <label><input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute"> Auto</label>
-      <label><input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab"> Close</label>
+      <label class="toggle">
+        <input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled">
+        <span class="slider"></span>
+        <span class="toggle-label">Enable</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute">
+        <span class="slider"></span>
+        <span class="toggle-label">Auto</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab">
+        <span class="slider"></span>
+        <span class="toggle-label">Close</span>
+      </label>
       <button class="deleteRule">Delete</button>
     </div>
   `;
