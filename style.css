@@ -93,3 +93,38 @@ button:hover {
     font-size: 0.9em;
     color: #5f6368;
 }
+
+.bookmark-search {
+  position: relative;
+  flex: 1;
+}
+
+.bookmark-search-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.bookmark-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #dadce0;
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.search-result {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.search-result:hover {
+  background-color: #f1f3f4;
+}

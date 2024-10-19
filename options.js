@@ -58,9 +58,10 @@ function createRuleElement(rule, index) {
     <input type="text" placeholder="Domain" value="${rule.domain || ''}" data-field="domain">
     <input type="text" placeholder="Contains" value="${rule.contains || ''}" data-field="contains">
     <input type="number" placeholder="Priority" value="${rule.priority || 0}" data-field="priority">
-    <select data-field="bookmarkLocation">
-      ${bookmarkFolders.map(folder => `<option value="${folder.id}" ${folder.id === rule.bookmarkLocation ? 'selected' : ''}>${folder.title}</option>`).join('')}
-    </select>
+    <div class="bookmark-search">
+      <input type="text" placeholder="Search bookmark folders" class="bookmark-search-input" data-field="bookmarkLocation" value="${getFolderName(rule.bookmarkLocation)}" data-selected-id="${rule.bookmarkLocation || ''}">
+      <div class="bookmark-search-results"></div>
+    </div>
     <select data-field="bookmarkAction">
       <option value="doNothing" ${rule.bookmarkAction === 'doNothing' ? 'selected' : ''}>Do Nothing if Bookmarked</option>
       <option value="replace" ${rule.bookmarkAction === 'replace' ? 'selected' : ''}>Replace Bookmark</option>
@@ -72,6 +73,45 @@ function createRuleElement(rule, index) {
     <button class="deleteRule">Delete Rule</button>
   `;
 
+  const searchInput = ruleDiv.querySelector('.bookmark-search-input');
+  const searchResults = ruleDiv.querySelector('.bookmark-search-results');
+
+  function updateSearchResults() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const filteredFolders = bookmarkFolders.filter(folder => 
+      folder.title.toLowerCase().includes(searchTerm)
+    );
+    searchResults.innerHTML = filteredFolders.map(folder => 
+      `<div class="search-result" data-id="${folder.id}">${folder.title}</div>`
+    ).join('');
+    searchResults.style.display = 'block';
+  }
+
+  searchInput.addEventListener('focus', () => {
+    updateSearchResults();
+    searchResults.style.display = 'block';
+  });
+
+  searchInput.addEventListener('input', updateSearchResults);
+
+  searchResults.addEventListener('click', (e) => {
+    if (e.target.classList.contains('search-result')) {
+      const folderId = e.target.dataset.id;
+      const folderName = e.target.textContent;
+      searchInput.value = folderName;
+      searchInput.dataset.selectedId = folderId;
+      searchResults.style.display = 'none';
+      updateRule(index);
+    }
+  });
+
+  // Hide results when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!ruleDiv.contains(e.target)) {
+      searchResults.style.display = 'none';
+    }
+  });
+
   ruleDiv.querySelectorAll('input, select').forEach(input => {
     input.addEventListener('change', () => updateRule(index));
   });
@@ -82,19 +122,24 @@ function createRuleElement(rule, index) {
 }
 
 function updateRule(index) {
-  chrome.storage.sync.get('rules', ({rules}) => {
-    const ruleDiv = document.querySelectorAll('.rule')[index];
-    rules[index] = {
-      domain: ruleDiv.querySelector('[data-field="domain"]').value,
-      contains: ruleDiv.querySelector('[data-field="contains"]').value,
-      priority: parseInt(ruleDiv.querySelector('[data-field="priority"]').value) || 0,
-      bookmarkLocation: ruleDiv.querySelector('[data-field="bookmarkLocation"]').value,
-      bookmarkAction: ruleDiv.querySelector('[data-field="bookmarkAction"]').value,
-      enabled: ruleDiv.querySelector('[data-field="enabled"]').checked,
-      autoExecute: ruleDiv.querySelector('[data-field="autoExecute"]').checked,
-      closeTab: ruleDiv.querySelector('[data-field="closeTab"]').checked
-    };
-    chrome.storage.sync.set({rules});
+  const ruleDiv = document.querySelectorAll('.rule')[index];
+  const rule = {};
+  ruleDiv.querySelectorAll('[data-field]').forEach(input => {
+    if (input.type === 'checkbox') {
+      rule[input.dataset.field] = input.checked;
+    } else if (input.dataset.field === 'bookmarkLocation') {
+      rule[input.dataset.field] = input.dataset.selectedId;
+    } else {
+      rule[input.dataset.field] = input.value;
+    }
+  });
+  
+  chrome.storage.sync.get('rules', (data) => {
+    const rules = data.rules || [];
+    rules[index] = rule;
+    chrome.storage.sync.set({rules}, () => {
+      console.log('Rule updated:', rule);
+    });
   });
 }
 
@@ -171,4 +216,9 @@ function handleOptionChange(optionId, optionName) {
     const status = e.target.checked ? 'enabled' : 'disabled';
     showNotification(`${optionName} ${status}`);
   });
+}
+
+function getFolderName(folderId) {
+  const folder = bookmarkFolders.find(f => f.id === folderId);
+  return folder ? folder.title : '';
 }
