@@ -53,8 +53,25 @@ function loadGlobalOptions() {
 
 function createRuleElement(rule, index) {
   const ruleDiv = document.createElement('div');
-  ruleDiv.className = 'rule';
-  ruleDiv.innerHTML = `
+  ruleDiv.className = 'rule-container';
+  
+  // Add the title row
+  const titleRow = document.createElement('div');
+  titleRow.className = 'rule-title-row';
+  titleRow.innerHTML = `
+    <span>Domain</span>
+    <span>Contains</span>
+    <span>Priority</span>
+    <span>Bookmark Folder</span>
+    <span>Action</span>
+    <span>Options</span>
+  `;
+  ruleDiv.appendChild(titleRow);
+
+  // Create the rule input row
+  const ruleInputRow = document.createElement('div');
+  ruleInputRow.className = 'rule';
+  ruleInputRow.innerHTML = `
     <input type="text" placeholder="Domain" value="${rule.domain || ''}" data-field="domain">
     <input type="text" placeholder="Contains" value="${rule.contains || ''}" data-field="contains">
     <input type="number" placeholder="Priority" value="${rule.priority || 0}" data-field="priority">
@@ -67,14 +84,17 @@ function createRuleElement(rule, index) {
       <option value="replace" ${rule.bookmarkAction === 'replace' ? 'selected' : ''}>Replace Bookmark</option>
       <option value="duplicate" ${rule.bookmarkAction === 'duplicate' ? 'selected' : ''}>Add Duplicate Bookmark</option>
     </select>
-    <label><input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled"> Enable Rule</label>
-    <label><input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute"> Auto Execute</label>
-    <label><input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab"> Close Tab</label>
-    <button class="deleteRule">Delete Rule</button>
+    <div class="rule-options">
+      <label><input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled"> Enable</label>
+      <label><input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute"> Auto</label>
+      <label><input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab"> Close</label>
+      <button class="deleteRule">Delete</button>
+    </div>
   `;
+  ruleDiv.appendChild(ruleInputRow);
 
-  const searchInput = ruleDiv.querySelector('.bookmark-search-input');
-  const searchResults = ruleDiv.querySelector('.bookmark-search-results');
+  const searchInput = ruleInputRow.querySelector('.bookmark-search-input');
+  const searchResults = ruleInputRow.querySelector('.bookmark-search-results');
 
   function updateSearchResults() {
     const searchTerm = searchInput.value.toLowerCase();
@@ -152,10 +172,13 @@ function deleteRule(index) {
 
 function displayRules() {
   const rulesContainer = document.getElementById('rules');
-  rulesContainer.innerHTML = '';
-  chrome.storage.sync.get('rules', ({rules = []}) => {
+  rulesContainer.innerHTML = ''; // Clear existing rules
+
+  chrome.storage.sync.get('rules', (data) => {
+    const rules = data.rules || [];
     rules.forEach((rule, index) => {
-      rulesContainer.appendChild(createRuleElement(rule, index));
+      const ruleElement = createRuleElement(rule, index);
+      rulesContainer.appendChild(ruleElement);
     });
   });
 }
