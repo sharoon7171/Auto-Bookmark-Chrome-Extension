@@ -11,6 +11,7 @@ Auto Bookmark is a handy Chrome extension that saves you time by automatically b
 3. **Flexible Options**: Choose where to save bookmarks and how to handle existing ones.
 4. **Tab Management**: Optionally close tabs after bookmarking.
 5. **Visual Feedback**: See clear notifications when your settings change.
+6. **Dynamic Bookmark Folder Selection**: Easily find and select bookmark folders with a smart search feature.
 
 ## How to Use Auto Bookmark
 
@@ -27,7 +28,12 @@ Auto Bookmark is a handy Chrome extension that saves you time by automatically b
    - Turn automatic bookmarking on or off.
    - Choose whether to automatically close tabs after bookmarking.
 
-4. **Watch It Work**: 
+4. **Select Bookmark Folders**:
+   - When creating or editing a rule, click on the bookmark folder field.
+   - Start typing to search for a specific folder, or browse the full list.
+   - Select your desired folder from the search results.
+
+5. **Watch It Work**: 
    - Browse the web as usual.
    - Auto Bookmark will save pages based on your rules.
    - Look for notifications to confirm when pages are bookmarked.
@@ -36,6 +42,7 @@ Auto Bookmark is a handy Chrome extension that saves you time by automatically b
 
 - Start with a few simple rules and add more as needed.
 - Use the priority setting if you have overlapping rules.
+- Take advantage of the folder search feature to quickly find the right location for your bookmarks.
 - Check your bookmarks folder regularly to see what's been saved.
 - Adjust your rules if you find you're bookmarking too much or too little.
 
