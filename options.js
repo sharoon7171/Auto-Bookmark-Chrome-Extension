@@ -1,13 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const extensionEnabled = document.getElementById('extensionEnabled');
-  const autoBookmark = document.getElementById('autoBookmark');
-  const autoCloseTab = document.getElementById('autoCloseTab');
-
-  chrome.storage.sync.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab'], (result) => {
-    extensionEnabled.checked = result.extensionEnabled ?? true;
-    autoBookmark.checked = result.autoBookmark ?? true;
-    autoCloseTab.checked = result.autoCloseTab ?? true;
-  });
+  loadGlobalOptions();
+  
+  handleOptionChange('extensionEnabled', 'Extension');
+  handleOptionChange('autoBookmark', 'Automatic bookmarking');
+  handleOptionChange('autoCloseTab', 'Automatic tab closing');
 
   [extensionEnabled, autoBookmark, autoCloseTab].forEach(checkbox => {
     checkbox.addEventListener('change', (event) => {
@@ -18,6 +14,23 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
+
+  loadGlobalOptions();
+  
+  document.getElementById('extensionEnabled').addEventListener('change', (e) => {
+    saveGlobalOptions();
+    showNotification(`Extension ${e.target.checked ? 'enabled' : 'disabled'}`, e.target.checked);
+  });
+  
+  document.getElementById('autoBookmark').addEventListener('change', (e) => {
+    saveGlobalOptions();
+    showNotification(`Automatic bookmarking ${e.target.checked ? 'enabled' : 'disabled'}`, e.target.checked);
+  });
+  
+  document.getElementById('autoCloseTab').addEventListener('change', (e) => {
+    saveGlobalOptions();
+    showNotification(`Automatic tab closing ${e.target.checked ? 'enabled' : 'disabled'}`, e.target.checked);
+  });
 });
 
 let bookmarkFolders = [];
@@ -26,6 +39,7 @@ function saveGlobalOptions() {
   const extensionEnabled = document.getElementById('extensionEnabled').checked;
   const autoBookmark = document.getElementById('autoBookmark').checked;
   const autoCloseTab = document.getElementById('autoCloseTab').checked;
+  
   chrome.storage.sync.set({ extensionEnabled, autoBookmark, autoCloseTab });
 }
 
@@ -134,3 +148,27 @@ chrome.bookmarks.getTree(bookmarkTreeNodes => {
   loadGlobalOptions();
   displayRules();
 });
+
+let notificationTimeout;
+
+function showNotification(message) {
+  clearTimeout(notificationTimeout);
+  
+  const notification = document.getElementById('notification');
+  notification.textContent = message;
+  notification.className = message.includes('enabled') ? 'notification-enabled' : 'notification-disabled';
+  notification.style.display = 'block';
+
+  notificationTimeout = setTimeout(() => {
+    notification.style.display = 'none';
+  }, 2000); // Display for 2 seconds
+}
+
+function handleOptionChange(optionId, optionName) {
+  const checkbox = document.getElementById(optionId);
+  checkbox.addEventListener('change', (e) => {
+    saveGlobalOptions();
+    const status = e.target.checked ? 'enabled' : 'disabled';
+    showNotification(`${optionName} ${status}`);
+  });
+}
