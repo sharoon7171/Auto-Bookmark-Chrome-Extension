@@ -18,7 +18,7 @@ Auto Bookmark is a powerful Chrome extension that automatically bookmarks web pa
 ## How to Use Auto Bookmark
 
 1. **Install the Extension**:
-   - Download the latest release zip file from the [Releases page](https://github.com/yourusername/auto-bookmark/releases).
+   - Download the latest release zip file from the [Releases page](https://github.com/sharoon7171/Auto-Bookmark-Chrome-Extension/releases/).
    - Unzip the downloaded file to a folder on your computer.
    - Open Google Chrome and go to `chrome://extensions/`.
    - Enable "Developer mode" by toggling the switch in the top right corner.
