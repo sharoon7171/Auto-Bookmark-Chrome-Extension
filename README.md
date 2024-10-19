@@ -115,3 +115,8 @@ Users can create multiple rules with the following options:
 - Populates the options page with all saved rules.
 
 These functions work together to provide a seamless and customizable bookmarking experience, allowing users to automate their bookmark management based on their browsing habits and preferences.
+
+## Credits
+
+Developed by Sharoon
+Contact: +92 312 4094969
