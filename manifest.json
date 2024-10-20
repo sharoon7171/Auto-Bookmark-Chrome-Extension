@@ -15,5 +15,10 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "options_page": "options.html"
+  "options_page": "options.html",
+  "commands": {
+    "apply-rules": {
+      "description": "Apply bookmarking rules"
+    }
+  }
 }

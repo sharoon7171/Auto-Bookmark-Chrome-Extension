@@ -198,3 +198,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Indicates we will send a response asynchronously
   }
 });
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command === "apply-rules") {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs[0]) {
+        executeRules(tabs[0].url, true).then(result => {
+          if (result) {
+            chrome.notifications.create({
+              type: 'basic',
+              iconUrl: 'icon48.png',
+              title: 'Auto Bookmark',
+              message: 'Rules applied successfully!'
+            });
+          } else {
+            chrome.notifications.create({
+              type: 'basic',
+              iconUrl: 'icon48.png',
+              title: 'Auto Bookmark',
+              message: 'No matching rules found.'
+            });
+          }
+        });
+      }
+    });
+  }
+});
