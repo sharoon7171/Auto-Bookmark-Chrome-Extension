@@ -142,44 +142,80 @@ function executeRule(rule, tab, globalAutoBookmark, globalAutoCloseTab) {
   }
 }
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete') {
-    handleTab(tab);
-  }
-});
-
-function executeRules(url, isManual = false) {
+function executeRules(tab, isManual = false) {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['rules', 'enabled'], (data) => {
-      if (!data.enabled && !isManual) {
+    chrome.storage.sync.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab'], (data) => {
+      if (!data.extensionEnabled && !isManual) {
         resolve(false);
         return;
       }
 
       const rules = data.rules || [];
-      console.log('Executing rules for URL:', url);
+      console.log('Executing rules for URL:', tab.url);
       console.log('Available rules:', rules);
 
-      const matchingRule = rules.find(rule => 
-        (rule.domain && url.includes(rule.domain)) || 
-        (rule.contains && url.includes(rule.contains))
-      );
+      const matchingRules = rules.filter(rule => 
+        rule.enabled && ((rule.domain && tab.url.includes(rule.domain)) || 
+        (rule.contains && tab.url.includes(rule.contains)))
+      ).sort((a, b) => b.priority - a.priority);
 
-      if (matchingRule) {
-        console.log('Matching rule found:', matchingRule);
-        chrome.bookmarks.create({
-          parentId: matchingRule.bookmarkLocation,
-          title: url, // Using URL as title for simplicity
-          url: url
-        }, (newBookmark) => {
-          if (chrome.runtime.lastError) {
-            console.error('Error creating bookmark:', chrome.runtime.lastError);
-            resolve(false);
-          } else {
-            console.log('Bookmark created:', newBookmark);
-            resolve(true);
-          }
-        });
+      if (matchingRules.length > 0) {
+        console.log('Matching rules found:', matchingRules);
+        const topRule = matchingRules[0];
+
+        if (data.autoBookmark || isManual) {
+          chrome.bookmarks.search({url: tab.url}, existingBookmarks => {
+            const bookmarkInfo = {
+              title: tab.title,
+              url: tab.url
+            };
+
+            if (topRule.bookmarkAction === 'doNothing' && existingBookmarks.length === 0) {
+              chrome.bookmarks.create({
+                ...bookmarkInfo,
+                parentId: topRule.bookmarkLocation
+              }, (newBookmark) => {
+                console.log('New bookmark created:', newBookmark);
+                applyCloseTab(tab, topRule, data.autoCloseTab, isManual, resolve);
+              });
+            } else if (topRule.bookmarkAction === 'replace') {
+              if (existingBookmarks.length > 0) {
+                const existingBookmark = existingBookmarks[0];
+                chrome.bookmarks.update(existingBookmark.id, bookmarkInfo, (updatedBookmark) => {
+                  console.log('Bookmark updated:', updatedBookmark);
+                  if (existingBookmark.parentId !== topRule.bookmarkLocation) {
+                    chrome.bookmarks.move(updatedBookmark.id, {parentId: topRule.bookmarkLocation}, (movedBookmark) => {
+                      console.log('Bookmark moved:', movedBookmark);
+                      applyCloseTab(tab, topRule, data.autoCloseTab, isManual, resolve);
+                    });
+                  } else {
+                    applyCloseTab(tab, topRule, data.autoCloseTab, isManual, resolve);
+                  }
+                });
+              } else {
+                chrome.bookmarks.create({
+                  ...bookmarkInfo,
+                  parentId: topRule.bookmarkLocation
+                }, (newBookmark) => {
+                  console.log('New bookmark created:', newBookmark);
+                  applyCloseTab(tab, topRule, data.autoCloseTab, isManual, resolve);
+                });
+              }
+            } else if (topRule.bookmarkAction === 'duplicate') {
+              chrome.bookmarks.create({
+                ...bookmarkInfo,
+                parentId: topRule.bookmarkLocation
+              }, (newBookmark) => {
+                console.log('Duplicate bookmark created:', newBookmark);
+                applyCloseTab(tab, topRule, data.autoCloseTab, isManual, resolve);
+              });
+            } else {
+              applyCloseTab(tab, topRule, data.autoCloseTab, isManual, resolve);
+            }
+          });
+        } else {
+          applyCloseTab(tab, topRule, data.autoCloseTab, isManual, resolve);
+        }
       } else {
         console.log('No matching rule found');
         resolve(false);
@@ -188,10 +224,27 @@ function executeRules(url, isManual = false) {
   });
 }
 
+function applyCloseTab(tab, rule, globalAutoCloseTab, isManual, resolve) {
+  if ((globalAutoCloseTab || isManual) && rule.closeTab) {
+    chrome.tabs.remove(tab.id, () => {
+      console.log('Tab closed:', tab.id);
+      resolve(true);
+    });
+  } else {
+    resolve(true);
+  }
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    executeRules(tab);
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "manualExecute") {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      executeRules(tabs[0].url, true).then(result => {
+      executeRules(tabs[0], true).then(result => {
         sendResponse({success: result});
       });
     });
@@ -203,7 +256,7 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === "apply-rules") {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0]) {
-        executeRules(tabs[0].url, true).then(result => {
+        executeRules(tabs[0], true).then(result => {
           if (result) {
             chrome.notifications.create({
               type: 'basic',
