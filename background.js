@@ -60,11 +60,15 @@ function handleTab(tab) {
   chrome.storage.sync.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab', 'rules'], (result) => {
     if (!result.extensionEnabled) return;
 
-    const matchingRules = (result.rules || []).filter(rule => 
-      rule.enabled && 
-      ((rule.domain && tab.url.includes(rule.domain)) || 
-      (rule.contains && tab.url.includes(rule.contains)))
-    ).sort((a, b) => b.priority - a.priority);
+    const matchingRules = (result.rules || []).filter(rule => {
+      if (!rule.enabled) return false;
+      
+      const domainMatch = rule.domain && tab.url.includes(rule.domain);
+      const containsMatch = rule.contains && tab.url.includes(rule.contains);
+      
+      // Match if both conditions are set and met, or if only one is set and met
+      return (rule.domain && rule.contains) ? (domainMatch && containsMatch) : (domainMatch || containsMatch);
+    }).sort((a, b) => b.priority - a.priority);
 
     if (matchingRules.length > 0) {
       const rule = matchingRules[0];

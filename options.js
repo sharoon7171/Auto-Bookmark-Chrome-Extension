@@ -35,6 +35,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let bookmarkFolders = [];
 
+// Add these variables at the top of your file
+let undoStack = [];
+let redoStack = [];
+
+// Load undo/redo stacks from storage
+function loadUndoRedoStacks() {
+  chrome.storage.local.get(['undoStack', 'redoStack'], (result) => {
+    undoStack = result.undoStack || [];
+    redoStack = result.redoStack || [];
+  });
+}
+
+// Save undo/redo stacks to storage
+function saveUndoRedoStacks() {
+  chrome.storage.local.set({ undoStack, redoStack });
+}
+
+// Call this function when the options page loads
+loadUndoRedoStacks();
+
 function saveGlobalOptions() {
   const extensionEnabled = document.getElementById('extensionEnabled').checked;
   const autoBookmark = document.getElementById('autoBookmark').checked;
@@ -153,6 +173,7 @@ function createRuleElement(rule, index) {
   return ruleDiv;
 }
 
+// Modify the updateRule function
 function updateRule(index) {
   const ruleDiv = document.querySelectorAll('.rule')[index];
   const rule = {};
@@ -166,8 +187,17 @@ function updateRule(index) {
     }
   });
   
+  // Ensure at least one of domain or contains is filled
+  if (!rule.domain && !rule.contains) {
+    alert('Please fill in either "URL Domain" or "URL Contains" field.');
+    return;
+  }
+  
   chrome.storage.sync.get('rules', (data) => {
     const rules = data.rules || [];
+    const oldRule = rules[index];
+    undoStack.push({ action: 'update', index, oldRule });
+    redoStack = [];
     rules[index] = rule;
     chrome.storage.sync.set({rules}, () => {
       console.log('Rule updated:', rule);
@@ -175,8 +205,55 @@ function updateRule(index) {
   });
 }
 
+// Add these functions for undo and redo
+function undo() {
+  if (undoStack.length === 0) return;
+  
+  const action = undoStack.pop();
+  chrome.storage.sync.get('rules', (data) => {
+    let rules = data.rules || [];
+    
+    if (action.action === 'update') {
+      redoStack.push({ action: 'update', index: action.index, oldRule: rules[action.index] });
+      rules[action.index] = action.oldRule;
+    } else if (action.action === 'add') {
+      redoStack.push({ action: 'delete', index: rules.length - 1 });
+      rules.pop();
+    } else if (action.action === 'delete') {
+      redoStack.push({ action: 'add', rule: action.rule });
+      rules.splice(action.index, 0, action.rule);
+    }
+    
+    chrome.storage.sync.set({rules}, displayRules);
+  });
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  
+  const action = redoStack.pop();
+  chrome.storage.sync.get('rules', (data) => {
+    let rules = data.rules || [];
+    
+    if (action.action === 'update') {
+      undoStack.push({ action: 'update', index: action.index, oldRule: rules[action.index] });
+      rules[action.index] = action.oldRule;
+    } else if (action.action === 'add') {
+      undoStack.push({ action: 'delete', index: rules.length });
+      rules.push(action.rule);
+    } else if (action.action === 'delete') {
+      undoStack.push({ action: 'add', rule: rules[action.index] });
+      rules.splice(action.index, 1);
+    }
+    
+    chrome.storage.sync.set({rules}, displayRules);
+  });
+}
+
 function deleteRule(index) {
   chrome.storage.sync.get('rules', ({rules}) => {
+    undoStack.push({ action: 'delete', index, rule: rules[index] });
+    redoStack = [];
     rules.splice(index, 1);
     chrome.storage.sync.set({rules}, displayRules);
   });
@@ -197,7 +274,7 @@ function displayRules() {
 
 document.getElementById('addRule').addEventListener('click', () => {
   chrome.storage.sync.get('rules', ({rules = []}) => {
-    rules.push({
+    const newRule = {
       domain: '',
       contains: '',
       priority: 0,
@@ -206,7 +283,10 @@ document.getElementById('addRule').addEventListener('click', () => {
       enabled: true,
       autoExecute: true,
       closeTab: false
-    });
+    };
+    undoStack.push({ action: 'add', rule: newRule });
+    redoStack = [];
+    rules.push(newRule);
     chrome.storage.sync.set({rules}, displayRules);
   });
 });
@@ -257,3 +337,86 @@ function getFolderName(folderId) {
   const folder = bookmarkFolders.find(f => f.id === folderId);
   return folder ? folder.title : '';
 }
+
+// Add event listener for Ctrl+Z (undo) and Ctrl+Y (redo)
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'z') {
+    e.preventDefault();
+    undo();
+  } else if (e.ctrlKey && e.key === 'y') {
+    e.preventDefault();
+    redo();
+  }
+});
+
+// Add this function to clear undo/redo stacks
+function clearUndoRedoStacks() {
+  undoStack = [];
+  redoStack = [];
+  saveUndoRedoStacks();
+}
+
+// Call this function when applying changes or when the user confirms they want to clear the history
+document.getElementById('applyChanges').addEventListener('click', clearUndoRedoStacks);
+
+// Function to load and display rules
+function loadAndDisplayRules() {
+  chrome.storage.sync.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab'], (data) => {
+    const rules = data.rules || [];
+    const extensionEnabled = data.extensionEnabled ?? true;
+    const autoBookmark = data.autoBookmark ?? true;
+    const autoCloseTab = data.autoCloseTab ?? false;
+
+    // Set global options
+    document.getElementById('extensionEnabled').checked = extensionEnabled;
+    document.getElementById('autoBookmark').checked = autoBookmark;
+    document.getElementById('autoCloseTab').checked = autoCloseTab;
+
+    // Display rules
+    const rulesContainer = document.getElementById('rules');
+    rulesContainer.innerHTML = ''; // Clear existing rules
+    rules.forEach((rule, index) => {
+      const ruleElement = createRuleElement(rule, index);
+      rulesContainer.appendChild(ruleElement);
+    });
+  });
+}
+
+// Function to initialize the page
+function initializePage() {
+  // Load bookmark folders
+  chrome.bookmarks.getTree(bookmarkTreeNodes => {
+    function traverseBookmarks(nodes) {
+      for (let node of nodes) {
+        if (node.children) {
+          bookmarkFolders.push({id: node.id, title: node.title});
+          traverseBookmarks(node.children);
+        }
+      }
+    }
+    traverseBookmarks(bookmarkTreeNodes);
+
+    // After loading bookmark folders, load and display rules
+    loadAndDisplayRules();
+  });
+
+  // Set up event listeners
+  document.getElementById('addRule').addEventListener('click', addNewRule);
+  document.querySelectorAll('#globalOptions input').forEach(input => {
+    input.addEventListener('change', saveGlobalOptions);
+  });
+
+  // Set up undo/redo keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      undo();
+    } else if (e.ctrlKey && e.key === 'y') {
+      e.preventDefault();
+      redo();
+    }
+  });
+}
+
+// Call initializePage when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', initializePage);
