@@ -103,21 +103,9 @@ function createRuleElement(rule, index) {
       <option value="duplicate" ${rule.bookmarkAction === 'duplicate' ? 'selected' : ''}>Add Duplicate Bookmark</option>
     </select>
     <div class="rule-options">
-      <label class="toggle">
-        <input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled">
-        <span class="slider"></span>
-        <span class="toggle-label">Enable</span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute">
-        <span class="slider"></span>
-        <span class="toggle-label">Auto</span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab">
-        <span class="slider"></span>
-        <span class="toggle-label">Close</span>
-      </label>
+      <label><input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled"> Enabled</label>
+      <label><input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute"> Auto</label>
+      <label><input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab"> Close Tab</label>
       <button class="deleteRule">Delete</button>
     </div>
   `;
