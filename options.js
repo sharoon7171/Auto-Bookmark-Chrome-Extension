@@ -1,79 +1,71 @@
-document.addEventListener('DOMContentLoaded', () => {
-  loadGlobalOptions();
-  
-  handleOptionChange('extensionEnabled', 'Extension');
-  handleOptionChange('autoBookmark', 'Automatic bookmarking');
-  handleOptionChange('autoCloseTab', 'Automatic tab closing');
-
-  [extensionEnabled, autoBookmark, autoCloseTab].forEach(checkbox => {
-    checkbox.addEventListener('change', (event) => {
-      const option = event.target.id;
-      const value = event.target.checked;
-      chrome.storage.sync.set({ [option]: value }, () => {
-        console.log(`${option} set to ${value}`);
-      });
-    });
-  });
-
-  loadGlobalOptions();
-  
-  document.getElementById('extensionEnabled').addEventListener('change', (e) => {
-    saveGlobalOptions();
-    showNotification(`Extension ${e.target.checked ? 'enabled' : 'disabled'}`, e.target.checked);
-  });
-  
-  document.getElementById('autoBookmark').addEventListener('change', (e) => {
-    saveGlobalOptions();
-    showNotification(`Automatic bookmarking ${e.target.checked ? 'enabled' : 'disabled'}`, e.target.checked);
-  });
-  
-  document.getElementById('autoCloseTab').addEventListener('change', (e) => {
-    saveGlobalOptions();
-    showNotification(`Automatic tab closing ${e.target.checked ? 'enabled' : 'disabled'}`, e.target.checked);
-  });
-});
-
 // Global variables
 let bookmarkFolders = [];
 let undoStack = [];
 let redoStack = [];
 let notificationTimeout;
 
-// Load undo/redo stacks from storage
+// DOM Elements
+const rulesContainer = document.getElementById('rules');
+const addRuleButton = document.getElementById('addRule');
+const extensionEnabledCheckbox = document.getElementById('extensionEnabled');
+const autoBookmarkCheckbox = document.getElementById('autoBookmark');
+const autoCloseTabCheckbox = document.getElementById('autoCloseTab');
+const backupSettingsButton = document.getElementById('backupSettings');
+const restoreSettingsButton = document.getElementById('restoreSettings');
+const restoreFileInput = document.getElementById('restoreFile');
+const notification = document.getElementById('notification');
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', initializePage);
+addRuleButton.addEventListener('click', addNewRule);
+backupSettingsButton.addEventListener('click', backupSettings);
+restoreSettingsButton.addEventListener('click', () => restoreFileInput.click());
+restoreFileInput.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file) restoreSettings(file);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'z') {
+    e.preventDefault();
+    undo();
+  } else if (e.ctrlKey && e.key === 'y') {
+    e.preventDefault();
+    redo();
+  }
+});
+
+// Functions
 async function loadUndoRedoStacks() {
   const result = await chrome.storage.local.get(['undoStack', 'redoStack']);
   undoStack = result.undoStack || [];
   redoStack = result.redoStack || [];
 }
 
-// Save undo/redo stacks to storage
 function saveUndoRedoStacks() {
   chrome.storage.local.set({ undoStack, redoStack });
 }
 
-// Save global options
 function saveGlobalOptions() {
-  const extensionEnabled = document.getElementById('extensionEnabled').checked;
-  const autoBookmark = document.getElementById('autoBookmark').checked;
-  const autoCloseTab = document.getElementById('autoCloseTab').checked;
-  
-  chrome.storage.sync.set({ extensionEnabled, autoBookmark, autoCloseTab });
+  const options = {
+    extensionEnabled: extensionEnabledCheckbox.checked,
+    autoBookmark: autoBookmarkCheckbox.checked,
+    autoCloseTab: autoCloseTabCheckbox.checked
+  };
+  chrome.storage.sync.set(options);
 }
 
-// Load global options
 async function loadGlobalOptions() {
   const result = await chrome.storage.sync.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab']);
-  document.getElementById('extensionEnabled').checked = result.extensionEnabled ?? true;
-  document.getElementById('autoBookmark').checked = result.autoBookmark ?? true;
-  document.getElementById('autoCloseTab').checked = result.autoCloseTab ?? true;
+  extensionEnabledCheckbox.checked = result.extensionEnabled ?? true;
+  autoBookmarkCheckbox.checked = result.autoBookmark ?? true;
+  autoCloseTabCheckbox.checked = result.autoCloseTab ?? true;
 }
 
-// Create rule element
 function createRuleElement(rule, index) {
   const ruleDiv = document.createElement('div');
   ruleDiv.className = 'rule-container';
   
-  // Add the title row
   const titleRow = document.createElement('div');
   titleRow.className = 'rule-title-row';
   titleRow.innerHTML = `
@@ -86,7 +78,6 @@ function createRuleElement(rule, index) {
   `;
   ruleDiv.appendChild(titleRow);
 
-  // Create the rule input row
   const ruleInputRow = document.createElement('div');
   ruleInputRow.className = 'rule';
   ruleInputRow.innerHTML = `
@@ -110,7 +101,6 @@ function createRuleElement(rule, index) {
     </div>
   `;
 
-  // Add event listeners for all inputs to save instantly
   ruleInputRow.querySelectorAll('input, select').forEach(input => {
     input.addEventListener('change', () => updateRule(index));
     if (input.type === 'text' || input.type === 'number') {
@@ -118,7 +108,6 @@ function createRuleElement(rule, index) {
     }
   });
 
-  // Add bookmark search functionality
   const bookmarkSearchInput = ruleInputRow.querySelector('.bookmark-search-input');
   const bookmarkSearchResults = ruleInputRow.querySelector('.bookmark-search-results');
 
@@ -138,14 +127,11 @@ function createRuleElement(rule, index) {
   });
 
   ruleDiv.appendChild(ruleInputRow);
-
-  // Add event listener for delete button
   ruleDiv.querySelector('.deleteRule').addEventListener('click', () => deleteRule(index));
 
   return ruleDiv;
 }
 
-// Update rule
 function updateRule(index) {
   const ruleDiv = document.querySelectorAll('.rule')[index];
   const rule = {};
@@ -172,7 +158,6 @@ function updateRule(index) {
   });
 }
 
-// Undo function
 function undo() {
   if (undoStack.length === 0) return;
   
@@ -195,7 +180,6 @@ function undo() {
   });
 }
 
-// Redo function
 function redo() {
   if (redoStack.length === 0) return;
   
@@ -218,7 +202,6 @@ function redo() {
   });
 }
 
-// Delete rule
 function deleteRule(index) {
   chrome.storage.sync.get('rules', ({rules}) => {
     undoStack.push({ action: 'delete', index, rule: rules[index] });
@@ -231,11 +214,8 @@ function deleteRule(index) {
   });
 }
 
-// Display rules
 function displayRules() {
-  const rulesContainer = document.getElementById('rules');
   rulesContainer.innerHTML = '';
-
   chrome.storage.sync.get('rules', (data) => {
     const rules = data.rules || [];
     rules.forEach((rule, index) => {
@@ -245,7 +225,6 @@ function displayRules() {
   });
 }
 
-// Add new rule
 function addNewRule() {
   chrome.storage.sync.get('rules', ({rules = []}) => {
     const newRule = {
@@ -268,11 +247,9 @@ function addNewRule() {
   });
 }
 
-// Show notification
 function showNotification(message, isEnabled = true) {
   clearTimeout(notificationTimeout);
   
-  const notification = document.getElementById('notification');
   notification.textContent = message;
   notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
   notification.classList.add('show');
@@ -284,7 +261,6 @@ function showNotification(message, isEnabled = true) {
   }, 3000);
 }
 
-// Handle option change
 function handleOptionChange(optionId, optionName) {
   const checkbox = document.getElementById(optionId);
   checkbox.addEventListener('change', (e) => {
@@ -294,34 +270,24 @@ function handleOptionChange(optionId, optionName) {
   });
 }
 
-// Get folder name
 function getFolderName(folderId) {
   const folder = bookmarkFolders.find(f => f.id === folderId);
   return folder ? folder.title : '';
 }
 
-// Clear undo/redo stacks
 function clearUndoRedoStacks() {
   undoStack = [];
   redoStack = [];
   saveUndoRedoStacks();
 }
 
-// Load and display rules
 async function loadAndDisplayRules() {
   const data = await chrome.storage.sync.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
   const rules = data.rules || [];
-  const extensionEnabled = data.extensionEnabled ?? true;
-  const autoBookmark = data.autoBookmark ?? true;
-  const autoCloseTab = data.autoCloseTab ?? false;
+  extensionEnabledCheckbox.checked = data.extensionEnabled ?? true;
+  autoBookmarkCheckbox.checked = data.autoBookmark ?? true;
+  autoCloseTabCheckbox.checked = data.autoCloseTab ?? false;
 
-  // Set global options
-  document.getElementById('extensionEnabled').checked = extensionEnabled;
-  document.getElementById('autoBookmark').checked = autoBookmark;
-  document.getElementById('autoCloseTab').checked = autoCloseTab;
-
-  // Display rules
-  const rulesContainer = document.getElementById('rules');
   rulesContainer.innerHTML = '';
   rules.forEach((rule, index) => {
     const ruleElement = createRuleElement(rule, index);
@@ -329,9 +295,7 @@ async function loadAndDisplayRules() {
   });
 }
 
-// Initialize page
 async function initializePage() {
-  // Load bookmark folders
   const bookmarkTreeNodes = await chrome.bookmarks.getTree();
   function traverseBookmarks(nodes) {
     for (let node of nodes) {
@@ -343,88 +307,12 @@ async function initializePage() {
   }
   traverseBookmarks(bookmarkTreeNodes);
 
-  // Load and display rules
   await loadAndDisplayRules();
 
-  // Set up event listeners
-  document.getElementById('addRule').addEventListener('click', addNewRule);
-  document.querySelectorAll('#globalOptions input').forEach(input => {
-    input.addEventListener('change', saveGlobalOptions);
-  });
-
-  // Set up undo/redo keyboard shortcuts
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'z') {
-      e.preventDefault();
-      undo();
-    } else if (e.ctrlKey && e.key === 'y') {
-      e.preventDefault();
-      redo();
-    }
-  });
-
-  document.getElementById('backupSettings').addEventListener('click', backupSettings);
-  document.getElementById('restoreSettings').addEventListener('click', () => {
-    document.getElementById('restoreFile').click();
-  });
-  document.getElementById('restoreFile').addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      restoreSettings(file);
-    }
-  });
+  handleOptionChange('extensionEnabled', 'Extension');
+  handleOptionChange('autoBookmark', 'Automatic bookmarking');
+  handleOptionChange('autoCloseTab', 'Automatic tab closing');
 }
-
-// Call initializePage when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initializePage);
-
-// Show rule notification
-function showRuleNotification(fieldName, value) {
-  let message;
-  let isEnabled = true;
-
-  switch (fieldName) {
-    case 'domain':
-      message = `URL Domain ${value ? 'added' : 'removed'}`;
-      isEnabled = !!value;
-      break;
-    case 'contains':
-      message = `URL Contains ${value ? 'added' : 'removed'}`;
-      isEnabled = !!value;
-      break;
-    case 'priority':
-      message = `Rule Priority set to ${value}`;
-      isEnabled = true;
-      break;
-    case 'bookmarkLocation':
-      message = `Bookmark Folder updated`;
-      isEnabled = true;
-      break;
-    case 'bookmarkAction':
-      message = `Bookmark Action set to "${value}"`;
-      isEnabled = true;
-      break;
-    case 'enabled':
-      message = `Rule ${value ? 'enabled' : 'disabled'}`;
-      isEnabled = value;
-      break;
-    case 'autoExecute':
-      message = `Auto Execute ${value ? 'enabled' : 'disabled'}`;
-      isEnabled = value;
-      break;
-    case 'closeTab':
-      message = `Close Tab ${value ? 'enabled' : 'disabled'}`;
-      isEnabled = value;
-      break;
-    default:
-      message = `Rule option updated`;
-      isEnabled = true;
-  }
-  showNotification(message, isEnabled);
-}
-
-// Load undo/redo stacks when the page loads
-loadUndoRedoStacks();
 
 function updateBookmarkSearchResults(resultsDiv, searchTerm) {
   resultsDiv.innerHTML = '';
@@ -445,7 +333,6 @@ function updateBookmarkSearchResults(resultsDiv, searchTerm) {
   });
 }
 
-// Backup settings
 function backupSettings() {
   chrome.storage.sync.get(null, (data) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
@@ -459,7 +346,6 @@ function backupSettings() {
   });
 }
 
-// Restore settings
 function restoreSettings(file) {
   const reader = new FileReader();
   reader.onload = (event) => {
@@ -475,3 +361,6 @@ function restoreSettings(file) {
   };
   reader.readAsText(file);
 }
+
+// Initialize
+loadUndoRedoStacks();

@@ -12,8 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   autoCloseTabToggle.checked = result.autoCloseTab ?? false;
 
   // Handle toggle changes
-  function handleToggleChange(toggleId, storageKey) {
-    const toggle = document.getElementById(toggleId);
+  function handleToggleChange(toggle, storageKey) {
     toggle.addEventListener('change', function() {
       chrome.storage.sync.set({ [storageKey]: this.checked }, function() {
         console.log(`${storageKey} is set to ${this.checked}`);
@@ -21,18 +20,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
-  handleToggleChange('extensionEnabled', 'extensionEnabled');
-  handleToggleChange('autoBookmark', 'autoBookmark');
-  handleToggleChange('autoCloseTab', 'autoCloseTab');
+  handleToggleChange(extensionEnabledToggle, 'extensionEnabled');
+  handleToggleChange(autoBookmarkToggle, 'autoBookmark');
+  handleToggleChange(autoCloseTabToggle, 'autoCloseTab');
 
   manualExecuteButton.addEventListener('click', async function() {
     const tabs = await chrome.tabs.query({active: true, currentWindow: true});
     const response = await chrome.runtime.sendMessage({action: "manualExecute", url: tabs[0].url});
-    if (response && response.success) {
-      console.log("Rules applied successfully");
-    } else {
-      console.log("No matching rules found or error occurred");
-    }
+    console.log(response && response.success ? "Rules applied successfully" : "No matching rules found or error occurred");
     window.close(); // Close the popup after sending the message
   });
 

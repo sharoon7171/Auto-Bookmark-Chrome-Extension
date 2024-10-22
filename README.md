@@ -1,99 +1,83 @@
-# Auto Bookmark Chrome Extension
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auto Bookmark Options</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Auto Bookmark</h1>
+  <div id="notification"></div>
+  <div id="globalOptions">
+    <label><input type="checkbox" id="extensionEnabled"> Enable Extension</label>
+    <label><input type="checkbox" id="autoBookmark"> Enable Automatic Bookmarking</label>
+    <label><input type="checkbox" id="autoCloseTab"> Enable Automatic Tab Closing</label>
+  </div>
+  <h2>Rules</h2>
+  <div class="rules-container" id="rules"></div>
+  <button id="addRule">Add New Rule</button>
+  <button id="backupSettings">Backup Settings</button>
+  <button id="restoreSettings">Restore Settings</button>
+  <input type="file" id="restoreFile" style="display: none;">
+  <h2>How to Use</h2>
+  <div id="howToUseSection">
+    <h3>1. Creating Rules</h3>
+    <p>Click "Add New Rule" and fill in the following:</p>
+    <ul>
+      <li><strong>URL Domain:</strong> e.g., "example.com" for matching specific websites</li>
+      <li><strong>URL Contains:</strong> e.g., "article" to match URLs containing this word</li>
+      <li><strong>Rule Priority:</strong> Higher numbers take precedence (0-100)</li>
+      <li><strong>Bookmark Folder:</strong> Select where to save the bookmark</li>
+      <li><strong>Action:</strong> Choose how to handle existing bookmarks</li>
+    </ul>
+    <p>Toggle options:</p>
+    <ul>
+      <li><strong>Enable:</strong> Activate or deactivate the rule</li>
+      <li><strong>Auto:</strong> Apply rule automatically when visiting matching pages</li>
+      <li><strong>Close:</strong> Close the tab after bookmarking</li>
+    </ul>
 
-## What is Auto Bookmark?
+    <h3>2. Global Options</h3>
+    <p>Use the checkboxes at the top to:</p>
+    <ul>
+      <li>Enable/disable the entire extension</li>
+      <li>Turn on/off automatic bookmarking for all rules</li>
+      <li>Enable/disable automatic tab closing for all rules</li>
+    </ul>
 
-Auto Bookmark is a powerful Chrome extension that automatically bookmarks web pages based on customizable rules. It helps you organize your bookmarks effortlessly, saving time and ensuring important pages are always saved.
+    <h3>3. Examples</h3>
+    <p><strong>News Articles:</strong> Domain "news.com", Contains "article", save to "News" folder, Auto-execute and close tab.</p>
+    <p><strong>Shopping:</strong> Domain "amazon.com", Contains "product", save to "Shopping" folder, Don't auto-execute.</p>
+    <p><strong>Research:</strong> Contains "pdf" or "research", save to "Research" folder, High priority.</p>
 
-## Key Features
+    <h3>4. Manual Execution</h3>
+    <p>Click the extension icon and use the "Apply Rules" button to manually execute rules for the current page.</p>
 
-1. **Rule-Based Bookmarking**: Create custom rules to automatically bookmark pages.
-2. **Flexible URL Matching**: Match pages based on domain and/or URL content.
-3. **Priority System**: Assign priorities to rules for handling conflicts.
-4. **Custom Bookmark Locations**: Choose where each rule saves bookmarks.
-5. **Bookmark Handling Options**: Replace existing bookmarks or add duplicates.
-6. **Auto-Execute**: Optionally apply rules automatically when visiting pages.
-7. **Tab Management**: Automatically close tabs after bookmarking.
-8. **Visual Feedback**: Receive notifications when settings are changed or bookmarks are added.
+    <h3>5. Keyboard Shortcut</h3>
+    <p>Use the keyboard shortcut (set in Chrome's extension settings) to quickly apply rules to the current page.</p>
 
-## How to Use Auto Bookmark
+    <h3>6. Backup and Restore</h3>
+    <p>Use the "Backup Settings" and "Restore Settings" buttons to save or load your configuration.</p>
+  </div>
+  <h2>Keyboard Shortcut</h2>
+  <div id="shortcutSection">
+    <p>To set up a custom keyboard shortcut for quick access:</p>
+    <ol>
+      <li>Go to Chrome's Extensions page (chrome://extensions)</li>
+      <li>Click on the menu icon (hamburger menu) in the top left</li>
+      <li>Select "Keyboard shortcuts" from the menu</li>
+      <li>Find "Auto Bookmark" in the list</li>
+      <li>Set your desired shortcut for "Apply bookmarking rules"</li>
+    </ol>
+    <p>Recommended shortcut: Ctrl+Shift+B (Windows/Linux) or Command+Shift+B (Mac)</p>
+  </div>
+  
+  <div class="credits">
+    <p>Developed by Sharoon</p>
+    <p>Contact: <a href="https://wa.me/923124094969" target="_blank">WhatsApp</a></p>
+    <p><a href="https://github.com/sharoon7171/Auto-Bookmark-Chrome-Extension" target="_blank">GitHub Repository</a></p>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>
 
-1. **Install the Extension**:
-   - Download the latest release zip file from the [Releases page](https://github.com/sharoon7171/Auto-Bookmark-Chrome-Extension/releases/).
-   - Unzip the downloaded file to a folder on your computer.
-   - Open Google Chrome and go to `chrome://extensions/`.
-   - Enable "Developer mode" by toggling the switch in the top right corner.
-   - Click on "Load unpacked" button.
-   - Navigate to the folder where you unzipped the extension files and select it.
-   - The Auto Bookmark extension should now appear in your extensions list and be ready to use.
-
-2. **Access Options**:
-   - Click the Auto Bookmark icon in your Chrome toolbar.
-   - Select 'Options' or 'Settings'.
-
-3. **Create Bookmarking Rules**:
-   - Click 'Add New Rule' in the options page.
-   - Fill in the rule details:
-     - **URL Domain**: The website domain to match (e.g., "example.com").
-     - **URL Contains**: Specific text in the URL to match (e.g., "article", "product").
-     - **Rule Priority**: Importance of the rule (0-100, higher is more important).
-     - **Bookmark Folder**: Where to save the bookmark (search and select).
-     - **Action**: What to do if the page is already bookmarked.
-   - Toggle options:
-     - **Enable**: Turn the rule on or off.
-     - **Auto**: Apply the rule automatically when visiting matching pages.
-     - **Close**: Close the tab after bookmarking.
-
-4. **Manage Global Options**:
-   - Enable/disable the entire extension.
-   - Turn on/off automatic bookmarking globally.
-   - Enable/disable automatic tab closing.
-
-5. **Use the Extension**:
-   - Browse the web normally.
-   - Auto Bookmark will save pages based on your rules.
-   - Manual bookmarking is still available through the extension icon.
-
-## Example Use Cases
-
-1. **News Articles**: 
-   - Rule: Domain "news.com", Contains "article", save to "News" folder.
-   - Auto-execute and close tab for efficient reading later.
-
-2. **Product Pages**: 
-   - Rule: Domain "amazon.com", Contains "product", save to "Shopping" folder.
-   - Don't auto-execute, allowing manual bookmarking of interesting products.
-
-3. **Research Papers**: 
-   - Rule: Contains "pdf" or "research", save to "Research" folder.
-   - High priority to ensure it overrides other rules.
-
-4. **Recipe Collection**: 
-   - Multiple rules for different cooking sites, all saving to "Recipes" folder.
-   - Replace existing bookmarks to avoid duplicates.
-
-5. **Work-Related Pages**: 
-   - Rule: Domain of your company's website, save to "Work" folder.
-   - Auto-execute but don't close tab for immediate access.
-
-## Tips for Effective Use
-
-- Start with a few broad rules and refine as needed.
-- Use the priority system to manage overlapping rules.
-- Regularly review your bookmarks to ensure rules are working as expected.
-- Utilize the "Contains" field for more specific matching within domains.
-- Take advantage of the folder search feature for quick organization.
-
-## Troubleshooting
-
-- If a rule isn't working, check if it's enabled and if the extension is globally enabled.
-- For overlapping rules, the one with higher priority will be applied.
-- If auto-execution isn't working, ensure the "Auto" toggle is on for the rule.
-
-## Need Help?
-
-If you have any questions, encounter issues, or want to suggest improvements, please contact:
-
-Developed by Sharoon
-Contact: +92 312 4094969
-
-Thank you for using Auto Bookmark!
