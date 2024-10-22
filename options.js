@@ -165,7 +165,13 @@ function createRuleElement(rule, index) {
   });
 
   ruleDiv.querySelectorAll('input, select').forEach(input => {
-    input.addEventListener('change', () => updateRule(index));
+    input.addEventListener('change', () => {
+      updateRule(index);
+      // Show notification for the changed option
+      const fieldName = input.dataset.field;
+      const value = input.type === 'checkbox' ? input.checked : input.value;
+      showRuleNotification(fieldName, value);
+    });
   });
 
   ruleDiv.querySelector('.deleteRule').addEventListener('click', () => deleteRule(index));
@@ -201,6 +207,8 @@ function updateRule(index) {
     rules[index] = rule;
     chrome.storage.sync.set({rules}, () => {
       console.log('Rule updated:', rule);
+      // Remove this line as we're now showing specific notifications for each field
+      // showNotification('Rule updated successfully');
     });
   });
 }
@@ -255,7 +263,10 @@ function deleteRule(index) {
     undoStack.push({ action: 'delete', index, rule: rules[index] });
     redoStack = [];
     rules.splice(index, 1);
-    chrome.storage.sync.set({rules}, displayRules);
+    chrome.storage.sync.set({rules}, () => {
+      displayRules();
+      showNotification('Rule deleted', false);
+    });
   });
 }
 
@@ -287,7 +298,10 @@ document.getElementById('addRule').addEventListener('click', () => {
     undoStack.push({ action: 'add', rule: newRule });
     redoStack = [];
     rules.push(newRule);
-    chrome.storage.sync.set({rules}, displayRules);
+    chrome.storage.sync.set({rules}, () => {
+      displayRules();
+      showNotification('New rule added', true);
+    });
   });
 });
 
@@ -311,17 +325,20 @@ chrome.bookmarks.getTree(bookmarkTreeNodes => {
 
 let notificationTimeout;
 
-function showNotification(message) {
-  clearTimeout(notificationTimeout);
-  
-  const notification = document.getElementById('notification');
-  notification.textContent = message;
-  notification.className = message.includes('enabled') ? 'notification-enabled' : 'notification-disabled';
-  notification.style.display = 'block';
+function showNotification(message, isEnabled = true) {
+    clearTimeout(notificationTimeout);
+    
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
+    notification.classList.add('show');
+    
+    // Trigger reflow to restart the animation
+    notification.offsetHeight;
 
-  notificationTimeout = setTimeout(() => {
-    notification.style.display = 'none';
-  }, 2000); // Display for 2 seconds
+    notificationTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000); // Display for 3 seconds
 }
 
 function handleOptionChange(optionId, optionName) {
@@ -329,7 +346,7 @@ function handleOptionChange(optionId, optionName) {
   checkbox.addEventListener('change', (e) => {
     saveGlobalOptions();
     const status = e.target.checked ? 'enabled' : 'disabled';
-    showNotification(`${optionName} ${status}`);
+    showNotification(`${optionName} ${status}`, e.target.checked);
   });
 }
 
@@ -420,3 +437,49 @@ function initializePage() {
 
 // Call initializePage when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializePage);
+
+// Add this new function to show notifications for rule changes
+function showRuleNotification(fieldName, value) {
+  let message;
+  let isEnabled = true;
+
+  switch (fieldName) {
+    case 'domain':
+      message = `URL Domain ${value ? 'added' : 'removed'}`;
+      isEnabled = !!value;
+      break;
+    case 'contains':
+      message = `URL Contains ${value ? 'added' : 'removed'}`;
+      isEnabled = !!value;
+      break;
+    case 'priority':
+      message = `Rule Priority set to ${value}`;
+      isEnabled = true;
+      break;
+    case 'bookmarkLocation':
+      message = `Bookmark Folder updated`;
+      isEnabled = true;
+      break;
+    case 'bookmarkAction':
+      message = `Bookmark Action set to "${value}"`;
+      isEnabled = true;
+      break;
+    case 'enabled':
+      message = `Rule ${value ? 'enabled' : 'disabled'}`;
+      isEnabled = value;
+      break;
+    case 'autoExecute':
+      message = `Auto Execute ${value ? 'enabled' : 'disabled'}`;
+      isEnabled = value;
+      break;
+    case 'closeTab':
+      message = `Close Tab ${value ? 'enabled' : 'disabled'}`;
+      isEnabled = value;
+      break;
+    default:
+      message = `Rule option updated`;
+      isEnabled = true;
+  }
+  showNotification(message, isEnabled);
+}
+
