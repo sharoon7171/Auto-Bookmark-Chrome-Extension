@@ -193,12 +193,6 @@ function updateRule(index) {
     }
   });
   
-  // Ensure at least one of domain or contains is filled
-  if (!rule.domain && !rule.contains) {
-    alert('Please fill in either "URL Domain" or "URL Contains" field.');
-    return;
-  }
-  
   chrome.storage.sync.get('rules', (data) => {
     const rules = data.rules || [];
     const oldRule = rules[index];
@@ -207,8 +201,6 @@ function updateRule(index) {
     rules[index] = rule;
     chrome.storage.sync.set({rules}, () => {
       console.log('Rule updated:', rule);
-      // Remove this line as we're now showing specific notifications for each field
-      // showNotification('Rule updated successfully');
     });
   });
 }
@@ -291,8 +283,8 @@ document.getElementById('addRule').addEventListener('click', () => {
       priority: 0,
       bookmarkLocation: bookmarkFolders[0].id,
       bookmarkAction: 'doNothing',
-      enabled: true,
-      autoExecute: true,
+      enabled: false,
+      autoExecute: false,
       closeTab: false
     };
     undoStack.push({ action: 'add', rule: newRule });
