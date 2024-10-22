@@ -33,18 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// Global variables
 let bookmarkFolders = [];
-
-// Add these variables at the top of your file
 let undoStack = [];
 let redoStack = [];
+let notificationTimeout;
 
 // Load undo/redo stacks from storage
-function loadUndoRedoStacks() {
-  chrome.storage.local.get(['undoStack', 'redoStack'], (result) => {
-    undoStack = result.undoStack || [];
-    redoStack = result.redoStack || [];
-  });
+async function loadUndoRedoStacks() {
+  const result = await chrome.storage.local.get(['undoStack', 'redoStack']);
+  undoStack = result.undoStack || [];
+  redoStack = result.redoStack || [];
 }
 
 // Save undo/redo stacks to storage
@@ -52,9 +51,7 @@ function saveUndoRedoStacks() {
   chrome.storage.local.set({ undoStack, redoStack });
 }
 
-// Call this function when the options page loads
-loadUndoRedoStacks();
-
+// Save global options
 function saveGlobalOptions() {
   const extensionEnabled = document.getElementById('extensionEnabled').checked;
   const autoBookmark = document.getElementById('autoBookmark').checked;
@@ -63,14 +60,15 @@ function saveGlobalOptions() {
   chrome.storage.sync.set({ extensionEnabled, autoBookmark, autoCloseTab });
 }
 
-function loadGlobalOptions() {
-  chrome.storage.sync.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab'], (result) => {
-    document.getElementById('extensionEnabled').checked = result.extensionEnabled ?? true;
-    document.getElementById('autoBookmark').checked = result.autoBookmark ?? true;
-    document.getElementById('autoCloseTab').checked = result.autoCloseTab ?? true;
-  });
+// Load global options
+async function loadGlobalOptions() {
+  const result = await chrome.storage.sync.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab']);
+  document.getElementById('extensionEnabled').checked = result.extensionEnabled ?? true;
+  document.getElementById('autoBookmark').checked = result.autoBookmark ?? true;
+  document.getElementById('autoCloseTab').checked = result.autoCloseTab ?? true;
 }
 
+// Create rule element
 function createRuleElement(rule, index) {
   const ruleDiv = document.createElement('div');
   ruleDiv.className = 'rule-container';
@@ -123,63 +121,43 @@ function createRuleElement(rule, index) {
       <button class="deleteRule">Delete</button>
     </div>
   `;
+
+  // Add event listeners for all inputs to save instantly
+  ruleInputRow.querySelectorAll('input, select').forEach(input => {
+    input.addEventListener('change', () => updateRule(index));
+    if (input.type === 'text' || input.type === 'number') {
+      input.addEventListener('input', () => updateRule(index));
+    }
+  });
+
+  // Add bookmark search functionality
+  const bookmarkSearchInput = ruleInputRow.querySelector('.bookmark-search-input');
+  const bookmarkSearchResults = ruleInputRow.querySelector('.bookmark-search-results');
+
+  bookmarkSearchInput.addEventListener('focus', () => {
+    bookmarkSearchResults.style.display = 'block';
+    updateBookmarkSearchResults(bookmarkSearchResults, bookmarkSearchInput.value);
+  });
+
+  bookmarkSearchInput.addEventListener('input', () => {
+    updateBookmarkSearchResults(bookmarkSearchResults, bookmarkSearchInput.value);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!bookmarkSearchInput.contains(e.target) && !bookmarkSearchResults.contains(e.target)) {
+      bookmarkSearchResults.style.display = 'none';
+    }
+  });
+
   ruleDiv.appendChild(ruleInputRow);
 
-  const searchInput = ruleInputRow.querySelector('.bookmark-search-input');
-  const searchResults = ruleInputRow.querySelector('.bookmark-search-results');
-
-  function updateSearchResults() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const filteredFolders = bookmarkFolders.filter(folder => 
-      folder.title.toLowerCase().includes(searchTerm)
-    );
-    searchResults.innerHTML = filteredFolders.map(folder => 
-      `<div class="search-result" data-id="${folder.id}">${folder.title}</div>`
-    ).join('');
-    searchResults.style.display = filteredFolders.length > 0 ? 'block' : 'none';
-  }
-
-  searchInput.addEventListener('focus', () => {
-    updateSearchResults();
-    searchResults.style.display = 'block';
-  });
-
-  searchInput.addEventListener('input', updateSearchResults);
-
-  searchResults.addEventListener('click', (e) => {
-    if (e.target.classList.contains('search-result')) {
-      const folderId = e.target.dataset.id;
-      const folderName = e.target.textContent;
-      searchInput.value = folderName;
-      searchInput.dataset.selectedId = folderId;
-      searchResults.style.display = 'none';
-      updateRule(index);
-    }
-  });
-
-  // Hide results when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!ruleDiv.contains(e.target)) {
-      searchResults.style.display = 'none';
-    }
-  });
-
-  ruleDiv.querySelectorAll('input, select').forEach(input => {
-    input.addEventListener('change', () => {
-      updateRule(index);
-      // Show notification for the changed option
-      const fieldName = input.dataset.field;
-      const value = input.type === 'checkbox' ? input.checked : input.value;
-      showRuleNotification(fieldName, value);
-    });
-  });
-
+  // Add event listener for delete button
   ruleDiv.querySelector('.deleteRule').addEventListener('click', () => deleteRule(index));
 
   return ruleDiv;
 }
 
-// Modify the updateRule function
+// Update rule
 function updateRule(index) {
   const ruleDiv = document.querySelectorAll('.rule')[index];
   const rule = {};
@@ -201,11 +179,12 @@ function updateRule(index) {
     rules[index] = rule;
     chrome.storage.sync.set({rules}, () => {
       console.log('Rule updated:', rule);
+      showNotification('Rule updated', true);
     });
   });
 }
 
-// Add these functions for undo and redo
+// Undo function
 function undo() {
   if (undoStack.length === 0) return;
   
@@ -228,6 +207,7 @@ function undo() {
   });
 }
 
+// Redo function
 function redo() {
   if (redoStack.length === 0) return;
   
@@ -250,6 +230,7 @@ function redo() {
   });
 }
 
+// Delete rule
 function deleteRule(index) {
   chrome.storage.sync.get('rules', ({rules}) => {
     undoStack.push({ action: 'delete', index, rule: rules[index] });
@@ -262,9 +243,10 @@ function deleteRule(index) {
   });
 }
 
+// Display rules
 function displayRules() {
   const rulesContainer = document.getElementById('rules');
-  rulesContainer.innerHTML = ''; // Clear existing rules
+  rulesContainer.innerHTML = '';
 
   chrome.storage.sync.get('rules', (data) => {
     const rules = data.rules || [];
@@ -275,7 +257,8 @@ function displayRules() {
   });
 }
 
-document.getElementById('addRule').addEventListener('click', () => {
+// Add new rule
+function addNewRule() {
   chrome.storage.sync.get('rules', ({rules = []}) => {
     const newRule = {
       domain: '',
@@ -295,44 +278,25 @@ document.getElementById('addRule').addEventListener('click', () => {
       showNotification('New rule added', true);
     });
   });
-});
-
-document.querySelectorAll('#globalOptions input').forEach(input => {
-  input.addEventListener('change', saveGlobalOptions);
-});
-
-chrome.bookmarks.getTree(bookmarkTreeNodes => {
-  function traverseBookmarks(nodes) {
-    for (let node of nodes) {
-      if (node.children) {
-        bookmarkFolders.push({id: node.id, title: node.title});
-        traverseBookmarks(node.children);
-      }
-    }
-  }
-  traverseBookmarks(bookmarkTreeNodes);
-  loadGlobalOptions();
-  displayRules();
-});
-
-let notificationTimeout;
-
-function showNotification(message, isEnabled = true) {
-    clearTimeout(notificationTimeout);
-    
-    const notification = document.getElementById('notification');
-    notification.textContent = message;
-    notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
-    notification.classList.add('show');
-    
-    // Trigger reflow to restart the animation
-    notification.offsetHeight;
-
-    notificationTimeout = setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000); // Display for 3 seconds
 }
 
+// Show notification
+function showNotification(message, isEnabled = true) {
+  clearTimeout(notificationTimeout);
+  
+  const notification = document.getElementById('notification');
+  notification.textContent = message;
+  notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
+  notification.classList.add('show');
+  
+  notification.offsetHeight; // Trigger reflow to restart the animation
+
+  notificationTimeout = setTimeout(() => {
+    notification.classList.remove('show');
+  }, 3000);
+}
+
+// Handle option change
 function handleOptionChange(optionId, optionName) {
   const checkbox = document.getElementById(optionId);
   checkbox.addEventListener('change', (e) => {
@@ -342,72 +306,57 @@ function handleOptionChange(optionId, optionName) {
   });
 }
 
+// Get folder name
 function getFolderName(folderId) {
   const folder = bookmarkFolders.find(f => f.id === folderId);
   return folder ? folder.title : '';
 }
 
-// Add event listener for Ctrl+Z (undo) and Ctrl+Y (redo)
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.key === 'z') {
-    e.preventDefault();
-    undo();
-  } else if (e.ctrlKey && e.key === 'y') {
-    e.preventDefault();
-    redo();
-  }
-});
-
-// Add this function to clear undo/redo stacks
+// Clear undo/redo stacks
 function clearUndoRedoStacks() {
   undoStack = [];
   redoStack = [];
   saveUndoRedoStacks();
 }
 
-// Call this function when applying changes or when the user confirms they want to clear the history
-document.getElementById('applyChanges').addEventListener('click', clearUndoRedoStacks);
+// Load and display rules
+async function loadAndDisplayRules() {
+  const data = await chrome.storage.sync.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
+  const rules = data.rules || [];
+  const extensionEnabled = data.extensionEnabled ?? true;
+  const autoBookmark = data.autoBookmark ?? true;
+  const autoCloseTab = data.autoCloseTab ?? false;
 
-// Function to load and display rules
-function loadAndDisplayRules() {
-  chrome.storage.sync.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab'], (data) => {
-    const rules = data.rules || [];
-    const extensionEnabled = data.extensionEnabled ?? true;
-    const autoBookmark = data.autoBookmark ?? true;
-    const autoCloseTab = data.autoCloseTab ?? false;
+  // Set global options
+  document.getElementById('extensionEnabled').checked = extensionEnabled;
+  document.getElementById('autoBookmark').checked = autoBookmark;
+  document.getElementById('autoCloseTab').checked = autoCloseTab;
 
-    // Set global options
-    document.getElementById('extensionEnabled').checked = extensionEnabled;
-    document.getElementById('autoBookmark').checked = autoBookmark;
-    document.getElementById('autoCloseTab').checked = autoCloseTab;
-
-    // Display rules
-    const rulesContainer = document.getElementById('rules');
-    rulesContainer.innerHTML = ''; // Clear existing rules
-    rules.forEach((rule, index) => {
-      const ruleElement = createRuleElement(rule, index);
-      rulesContainer.appendChild(ruleElement);
-    });
+  // Display rules
+  const rulesContainer = document.getElementById('rules');
+  rulesContainer.innerHTML = '';
+  rules.forEach((rule, index) => {
+    const ruleElement = createRuleElement(rule, index);
+    rulesContainer.appendChild(ruleElement);
   });
 }
 
-// Function to initialize the page
-function initializePage() {
+// Initialize page
+async function initializePage() {
   // Load bookmark folders
-  chrome.bookmarks.getTree(bookmarkTreeNodes => {
-    function traverseBookmarks(nodes) {
-      for (let node of nodes) {
-        if (node.children) {
-          bookmarkFolders.push({id: node.id, title: node.title});
-          traverseBookmarks(node.children);
-        }
+  const bookmarkTreeNodes = await chrome.bookmarks.getTree();
+  function traverseBookmarks(nodes) {
+    for (let node of nodes) {
+      if (node.children) {
+        bookmarkFolders.push({id: node.id, title: node.title});
+        traverseBookmarks(node.children);
       }
     }
-    traverseBookmarks(bookmarkTreeNodes);
+  }
+  traverseBookmarks(bookmarkTreeNodes);
 
-    // After loading bookmark folders, load and display rules
-    loadAndDisplayRules();
-  });
+  // Load and display rules
+  await loadAndDisplayRules();
 
   // Set up event listeners
   document.getElementById('addRule').addEventListener('click', addNewRule);
@@ -430,7 +379,7 @@ function initializePage() {
 // Call initializePage when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializePage);
 
-// Add this new function to show notifications for rule changes
+// Show rule notification
 function showRuleNotification(fieldName, value) {
   let message;
   let isEnabled = true;
@@ -473,5 +422,27 @@ function showRuleNotification(fieldName, value) {
       isEnabled = true;
   }
   showNotification(message, isEnabled);
+}
+
+// Load undo/redo stacks when the page loads
+loadUndoRedoStacks();
+
+function updateBookmarkSearchResults(resultsDiv, searchTerm) {
+  resultsDiv.innerHTML = '';
+  const matchingFolders = bookmarkFolders.filter(folder => 
+    folder.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  matchingFolders.forEach(folder => {
+    const folderElement = document.createElement('div');
+    folderElement.textContent = folder.title;
+    folderElement.className = 'search-result';
+    folderElement.addEventListener('click', () => {
+      resultsDiv.previousElementSibling.value = folder.title;
+      resultsDiv.previousElementSibling.dataset.selectedId = folder.id;
+      resultsDiv.style.display = 'none';
+      updateRule(Array.from(document.querySelectorAll('.rule')).indexOf(resultsDiv.closest('.rule')));
+    });
+    resultsDiv.appendChild(folderElement);
+  });
 }
 
