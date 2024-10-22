@@ -374,6 +374,17 @@ async function initializePage() {
       redo();
     }
   });
+
+  document.getElementById('backupSettings').addEventListener('click', backupSettings);
+  document.getElementById('restoreSettings').addEventListener('click', () => {
+    document.getElementById('restoreFile').click();
+  });
+  document.getElementById('restoreFile').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      restoreSettings(file);
+    }
+  });
 }
 
 // Call initializePage when the DOM is fully loaded
@@ -446,3 +457,33 @@ function updateBookmarkSearchResults(resultsDiv, searchTerm) {
   });
 }
 
+// Backup settings
+function backupSettings() {
+  chrome.storage.sync.get(null, (data) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'auto_bookmark_settings.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotification('Settings backed up successfully', true);
+  });
+}
+
+// Restore settings
+function restoreSettings(file) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const settings = JSON.parse(event.target.result);
+      chrome.storage.sync.set(settings, () => {
+        loadAndDisplayRules();
+        showNotification('Settings restored successfully', true);
+      });
+    } catch (error) {
+      showNotification('Error restoring settings: Invalid file', false);
+    }
+  };
+  reader.readAsText(file);
+}
