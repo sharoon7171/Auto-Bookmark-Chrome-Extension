@@ -83,8 +83,7 @@ The extension offers a comprehensive options page where you can:
 Developed by Sharoon
 
 Contact: 
-- WhatsApp: +92 312 4094969
-- [GitHub Repository](https://github.com/sharoon7171/Auto-Bookmark-Chrome-Extension)
+- WhatsApp: [+92 312 4094969](https://wa.me/923124094969)
 
 Feel free to reach out with any questions, issues, or suggestions for improvement!
 
