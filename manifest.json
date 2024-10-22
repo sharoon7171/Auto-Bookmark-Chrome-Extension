@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Auto Bookmark",
+  "name": "Smart Bookmark Saver",
   "version": "1.0.0",
-  "description": "Automatically bookmark pages based on custom rules.",
+  "description": "Automatically save and organize your bookmarks based on custom rules. Streamline your bookmarking process and keep your favorite sites tidy.",
   "permissions": [
     "storage",
     "bookmarks",

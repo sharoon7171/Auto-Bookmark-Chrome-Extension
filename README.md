@@ -1,8 +1,8 @@
-# Auto Bookmark Chrome Extension
+# Smart Bookmark Saver Chrome Extension
 
 ## About the Extension
 
-Auto Bookmark is a powerful Chrome extension designed to streamline your bookmarking process. It automatically organizes your bookmarks based on custom rules you define, saving you time and keeping your bookmarks tidy.
+Smart Bookmark Saver is a powerful Chrome extension designed to streamline your bookmarking process. It automatically organizes your bookmarks based on custom rules you define, saving you time and keeping your bookmarks tidy.
 
 ## Features
 
