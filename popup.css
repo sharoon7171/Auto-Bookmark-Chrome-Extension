@@ -34,48 +34,49 @@ h1 {
   margin-bottom: 15px;
 }
 
+/* Custom checkbox style */
 .toggle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   cursor: pointer;
 }
 
-.toggle input {
-  display: none;
-}
-
-.slider {
+.toggle input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--primary-color);
+  border-radius: 3px;
+  outline: none;
+  transition: all 0.3s ease;
   position: relative;
-  width: 60px;
-  height: 34px;
-  background-color: #ccc;
-  border-radius: 34px;
-  transition: 0.4s;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-right: 8px;
 }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  border-radius: 50%;
-  transition: 0.4s;
-  box-shadow: 0 2px 5px var(--shadow-color);
-}
-
-input:checked + .slider {
+.toggle input[type="checkbox"]:checked {
   background-color: var(--primary-color);
 }
 
-input:checked + .slider:before {
-  transform: translateX(26px);
+.toggle input[type="checkbox"]:checked::before {
+  content: '\2714';
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.toggle:hover input[type="checkbox"] {
+  border-color: var(--primary-color-dark);
 }
 
 .toggle-label {
-  margin-left: 15px;
+  margin-left: 5px;
 }
 
 .btn {
@@ -111,4 +112,13 @@ input:checked + .slider:before {
 
 .credits p {
   margin: 5px 0;
+}
+
+.credits a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.credits a:hover {
+  text-decoration: underline;
 }

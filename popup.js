@@ -54,5 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Implement restore functionality here
+  // TODO: Implement restore functionality here
+  // elements.restoreButton.addEventListener('click', () => {
+  //   // Add restore functionality
+  // });
 });
