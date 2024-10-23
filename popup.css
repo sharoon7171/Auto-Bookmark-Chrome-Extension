@@ -14,47 +14,57 @@
   --disabled-color: #e74c3c;
 }
 
+* {
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
 body {
   font-family: var(--font-secondary);
   background-color: var(--secondary-color);
   color: var(--text-color);
   margin: 0;
-  padding: 20px;
+  padding: 15px;
   width: 300px;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
-.container {
+#contentContainer {
   background-color: #ffffff;
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 10px 20px var(--shadow-color);
+  padding: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
   font-family: var(--font-primary);
   color: var(--primary-color);
-  font-size: 24px;
+  font-size: 20px;
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   text-align: center;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 #globalOptions {
-  background-color: #fff;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  padding: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  padding: 10px;
 }
 
 .toggle-container {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
-/* Custom checkbox style */
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -63,17 +73,16 @@ h1 {
 
 .toggle input[type="checkbox"] {
   -webkit-appearance: none;
-  -moz-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--primary-color);
   border-radius: 3px;
   outline: none;
   position: relative;
   cursor: pointer;
   vertical-align: middle;
-  margin-right: 8px;
+  margin-right: 6px;
   transition: all 0.3s ease;
 }
 
@@ -87,9 +96,9 @@ h1 {
   border-color: var(--disabled-color);
 }
 
-.toggle input[type="checkbox"]:checked::before {
+.toggle input[type="checkbox"]::before {
   content: '\2714';
-  font-size: 14px;
+  font-size: 12px;
   color: white;
   position: absolute;
   top: 50%;
@@ -99,19 +108,10 @@ h1 {
 
 .toggle input[type="checkbox"]:not(:checked)::before {
   content: '\2716';
-  font-size: 14px;
-  color: white;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 .toggle-label {
-  margin-left: 5px;
-  font-weight: 600;
-  font-family: var(--font-accent);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .button-container {
@@ -122,34 +122,39 @@ h1 {
 
 .btn {
   flex: 1;
-  padding: 10px 15px;
+  padding: 8px 12px;
   margin: 0 5px;
   background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   font-family: var(--font-accent);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn:hover {
   background-color: #3a7bc8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+  transform: translateY(1px);
 }
 
 .credits {
-  margin-top: 20px;
+  margin-top: 15px;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   color: #5f6368;
-  font-weight: 500;
-  font-family: var(--font-accent);
 }
 
 .credits p {
-  margin: 5px 0;
+  margin: 3px 0;
 }
 
 .credits a {
@@ -160,4 +165,90 @@ h1 {
 
 .credits a:hover {
   text-decoration: underline;
+}
+
+::selection {
+  background: var(--primary-color);
+  color: white;
+}
+
+::-moz-selection {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Add these styles to your existing popup.css file */
+
+.bookmark-search {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.bookmark-search-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: var(--font-secondary);
+  background-color: white;
+  color: var(--text-color);
+}
+
+.bookmark-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.bookmark-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px var(--shadow-color);
+  border-radius: 0 0 4px 4px;
+}
+
+.search-result {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.search-result:hover {
+  background-color: var(--secondary-color);
+}
+
+.search-result.selected {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Scrollbar styles for webkit browsers */
+.bookmark-search-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+.bookmark-search-results::-webkit-scrollbar-track {
+  background: var(--secondary-color);
+}
+
+.bookmark-search-results::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 4px;
+  border: 2px solid var(--secondary-color);
+}
+
+/* Scrollbar styles for Firefox */
+.bookmark-search-results {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--secondary-color);
 }

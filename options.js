@@ -24,10 +24,10 @@ elements.backupButton.addEventListener('click', backupSettings);
 elements.restoreButton.addEventListener('click', restoreSettings);
 
 document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.key === 'z') {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
     e.preventDefault();
     undo();
-  } else if (e.ctrlKey && e.key === 'y') {
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
     e.preventDefault();
     redo();
   }
@@ -63,19 +63,6 @@ async function loadGlobalOptions() {
   elements.autoCloseTabCheckbox.checked = result.autoCloseTab ?? false;
 }
 
-// Utility function for debouncing
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 // Error handling wrapper for async functions
 async function safeAsyncFunction(asyncFunction) {
   try {
@@ -106,11 +93,11 @@ function createRuleElement(rule, index) {
   const ruleInputRow = document.createElement('div');
   ruleInputRow.className = 'rule';
   ruleInputRow.innerHTML = `
-    <input type="text" placeholder="e.g., example.com" value="${rule.domain || ''}" data-field="domain">
-    <input type="text" placeholder="e.g., article, product" value="${rule.contains || ''}" data-field="contains">
-    <input type="number" placeholder="0-100 (higher = more important)" value="${rule.priority || 0}" data-field="priority" min="0" max="100">
+    <input type="text" placeholder="e.g., example.com" value="${rule.domain || ''}" data-field="domain" class="selectable-input">
+    <input type="text" placeholder="e.g., article, product" value="${rule.contains || ''}" data-field="contains" class="selectable-input">
+    <input type="number" placeholder="0-100 (higher = more important)" value="${rule.priority || 0}" data-field="priority" min="0" max="100" class="selectable-input">
     <div class="bookmark-search">
-      <input type="text" placeholder="Search bookmark folders" class="bookmark-search-input" data-field="bookmarkLocation" value="${getFolderName(rule.bookmarkLocation)}" data-selected-id="${rule.bookmarkLocation || ''}">
+      <input type="text" placeholder="Search bookmark folders" class="bookmark-search-input" data-field="bookmarkLocation" data-selected-id="${rule.bookmarkLocation || ''}">
       <div class="bookmark-search-results"></div>
     </div>
     <select data-field="bookmarkAction">
@@ -127,30 +114,39 @@ function createRuleElement(rule, index) {
   `;
 
   ruleInputRow.querySelectorAll('input, select').forEach(input => {
-    input.addEventListener('change', () => updateRule(index));
     if (input.type === 'text' || input.type === 'number') {
-      input.addEventListener('input', () => updateRule(index));
+      input.addEventListener('input', (event) => updateRule(index, event));
+    } else {
+      input.addEventListener('change', (event) => updateRule(index, event));
     }
   });
 
   const bookmarkSearchInput = ruleInputRow.querySelector('.bookmark-search-input');
   const bookmarkSearchResults = ruleInputRow.querySelector('.bookmark-search-results');
 
+  // Set the initial value to the folder name if it exists
+  if (rule.bookmarkLocation) {
+    bookmarkSearchInput.value = getFolderName(rule.bookmarkLocation);
+  }
+
   bookmarkSearchInput.addEventListener('focus', () => {
-    bookmarkSearchResults.style.display = 'block';
     bookmarkSearchInput.value = ''; // Clear the input when focused
+    bookmarkSearchResults.style.display = 'block';
     updateBookmarkSearchResults(bookmarkSearchResults, '');
   });
 
-  bookmarkSearchInput.addEventListener('input', () => {
-    debouncedUpdateBookmarkSearchResults(bookmarkSearchResults, bookmarkSearchInput.value);
+  bookmarkSearchInput.addEventListener('blur', () => {
+    // Restore the folder name if no new selection was made
+    setTimeout(() => {
+      if (!bookmarkSearchInput.value && bookmarkSearchInput.dataset.selectedId) {
+        bookmarkSearchInput.value = getFolderName(bookmarkSearchInput.dataset.selectedId);
+      }
+    }, 200);
   });
 
   document.addEventListener('click', (e) => {
     if (!bookmarkSearchInput.contains(e.target) && !bookmarkSearchResults.contains(e.target)) {
       bookmarkSearchResults.style.display = 'none';
-      // Restore the original value if no selection was made
-      bookmarkSearchInput.value = getFolderName(bookmarkSearchInput.dataset.selectedId);
     }
   });
 
@@ -160,7 +156,7 @@ function createRuleElement(rule, index) {
   return ruleDiv;
 }
 
-function updateRule(index) {
+function updateRule(index, event) {
   const ruleDiv = document.querySelectorAll('.rule')[index];
   const ruleInputs = ruleDiv.querySelectorAll('[data-field]');
   const newRule = Object.fromEntries(
@@ -178,6 +174,27 @@ function updateRule(index) {
     })
   );
   
+  const changedInput = event.target;
+  if (changedInput && (changedInput.dataset.field === 'domain' || changedInput.dataset.field === 'contains')) {
+    if (event.type === 'input') {
+      const oldValue = changedInput.dataset.oldValue || '';
+      const newValue = changedInput.value;
+      
+      if (newValue.length > oldValue.length) {
+        showNotification(`Adding "${newValue}"`, true);
+      } else if (newValue.length < oldValue.length) {
+        showNotification(`Removing "${oldValue}"`, false);
+      }
+      
+      changedInput.dataset.oldValue = newValue;
+    }
+  }
+
+  // Save the rule immediately
+  saveRule(index, newRule);
+}
+
+function saveRule(index, newRule) {
   safeAsyncFunction(async () => {
     const data = await chrome.storage.local.get('rules');
     const rules = data.rules || [];
@@ -187,40 +204,40 @@ function updateRule(index) {
     rules[index] = newRule;
     await chrome.storage.local.set({rules});
     
-    // Generate detailed notification message
     let changes = [];
     if (oldRule.domain !== newRule.domain) {
-      changes.push(`URL domain ${newRule.domain ? 'added' : 'removed'} (${newRule.domain || oldRule.domain})`);
+      changes.push(`"${newRule.domain}" is ${newRule.domain ? 'Added' : 'Removed'}`);
     }
     if (oldRule.contains !== newRule.contains) {
-      changes.push(`URL contains ${newRule.contains ? 'added' : 'removed'} (${newRule.contains || oldRule.contains})`);
+      changes.push(`"${newRule.contains}" is ${newRule.contains ? 'Added' : 'Removed'}`);
     }
     if (oldRule.priority !== newRule.priority) {
       changes.push(`Priority set to (${newRule.priority})`);
     }
     if (oldRule.bookmarkLocation !== newRule.bookmarkLocation) {
-      changes.push(`Selected bookmark (${getFolderName(newRule.bookmarkLocation)})`);
+      changes.push(`Selected ${getFolderName(newRule.bookmarkLocation)}`);
     }
     if (oldRule.bookmarkAction !== newRule.bookmarkAction) {
-      changes.push(`Bookmark action changed (${newRule.bookmarkAction})`);
+      const actionFullNames = {
+        'doNothing': 'Do Nothing if Bookmarked',
+        'replace': 'Replace Bookmark',
+        'duplicate': 'Add Duplicate Bookmark'
+      };
+      changes.push(`Selected ${actionFullNames[newRule.bookmarkAction]}`);
     }
     if (oldRule.enabled !== newRule.enabled) {
-      changes.push(`Rule ${newRule.enabled ? 'enabled' : 'disabled'}`);
+      changes.push(`Rule ${index + 1} ${newRule.enabled ? 'Enabled' : 'Disabled'}`);
     }
     if (oldRule.autoExecute !== newRule.autoExecute) {
-      changes.push(`Auto bookmark ${newRule.autoExecute ? 'enabled' : 'disabled'}`);
+      changes.push(`Auto Execution ${newRule.autoExecute ? 'Enabled' : 'Disabled'} for Rule ${index + 1}`);
     }
     if (oldRule.closeTab !== newRule.closeTab) {
-      changes.push(`Auto close tab ${newRule.closeTab ? 'enabled' : 'disabled'}`);
+      changes.push(`Auto Close ${newRule.closeTab ? 'Enabled' : 'Disabled'} for Rule ${index + 1}`);
     }
     
-    let notificationMessage = `Rule ${index + 1} updated: ${changes.join(', ')}`;
+    let notificationMessage = changes.join(', ');
     if (notificationMessage) {
-      // Determine if the notification should be green or red based on the specific change
-      let isEnabled = true;
-      if (changes.some(change => change.includes('disabled'))) {
-        isEnabled = false;
-      }
+      const isEnabled = !notificationMessage.includes('Disabled');
       showNotification(notificationMessage, isEnabled);
     }
   });
@@ -321,9 +338,12 @@ function showNotification(message, isEnabled = true) {
   
   elements.notification.textContent = message;
   elements.notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
-  elements.notification.classList.add('show');
+  elements.notification.classList.remove('show');
   
-  elements.notification.offsetHeight; // Trigger reflow to restart the animation
+  // Force a reflow
+  void elements.notification.offsetWidth;
+  
+  elements.notification.classList.add('show');
 
   notificationTimeout = setTimeout(() => {
     elements.notification.classList.remove('show');
@@ -334,17 +354,17 @@ function handleOptionChange(optionId, optionName) {
   const checkbox = document.getElementById(optionId);
   checkbox.addEventListener('change', (e) => {
     saveGlobalOptions();
-    const status = e.target.checked ? 'enabled' : 'disabled';
+    const status = e.target.checked ? 'Enabled' : 'Disabled';
     let notificationMessage;
     switch (optionName) {
       case 'Extension':
-        notificationMessage = `Extension ${status} globally`;
+        notificationMessage = `Extension ${status}`;
         break;
       case 'Automatic bookmarking':
-        notificationMessage = `Automatic bookmarking ${status} for all rules`;
+        notificationMessage = `Automatic Bookmarking ${status} Globally`;
         break;
       case 'Automatic tab closing':
-        notificationMessage = `Automatic tab closing ${status} for all rules`;
+        notificationMessage = `Automatic Tab Closing ${status} Globally`;
         break;
       default:
         notificationMessage = `${optionName} ${status}`;
@@ -378,11 +398,10 @@ async function loadAndDisplayRules() {
   });
 }
 
-async function initializePage() {
-  // Hide content while loading
-  elements.contentContainer.style.display = 'none';
-
+// Add this function to update bookmark folders
+async function updateBookmarkFolders() {
   const bookmarkTreeNodes = await chrome.bookmarks.getTree();
+  bookmarkFolders = [];
   function traverseBookmarks(nodes) {
     for (const node of nodes) {
       if (node.children) {
@@ -392,6 +411,14 @@ async function initializePage() {
     }
   }
   traverseBookmarks(bookmarkTreeNodes);
+}
+
+// Modify the initializePage function
+async function initializePage() {
+  // Hide content while loading
+  elements.contentContainer.style.display = 'none';
+
+  await updateBookmarkFolders();
 
   await loadAndDisplayRules();
   await loadGlobalOptions();
@@ -402,13 +429,32 @@ async function initializePage() {
 
   // Show content after everything is loaded
   elements.contentContainer.style.display = 'block';
+
+  // Add listener for bookmark changes
+  chrome.bookmarks.onCreated.addListener(handleBookmarkChange);
+  chrome.bookmarks.onRemoved.addListener(handleBookmarkChange);
+  chrome.bookmarks.onChanged.addListener(handleBookmarkChange);
+  chrome.bookmarks.onMoved.addListener(handleBookmarkChange);
 }
 
+// Add this function to handle bookmark changes
+async function handleBookmarkChange() {
+  await updateBookmarkFolders();
+  // Update all bookmark folder dropdowns
+  document.querySelectorAll('.bookmark-search-input').forEach(input => {
+    const resultsDiv = input.nextElementSibling;
+    updateBookmarkSearchResults(resultsDiv, input.value);
+  });
+}
+
+// Modify the updateBookmarkSearchResults function
 function updateBookmarkSearchResults(resultsDiv, searchTerm) {
   resultsDiv.innerHTML = '';
+  const lowerSearchTerm = searchTerm.toLowerCase();
   const matchingFolders = bookmarkFolders.filter(folder => 
-    folder.title.toLowerCase().includes(searchTerm.toLowerCase())
+    folder.title.toLowerCase().includes(lowerSearchTerm)
   );
+  
   matchingFolders.forEach(folder => {
     const folderElement = document.createElement('div');
     folderElement.textContent = folder.title;
@@ -418,14 +464,19 @@ function updateBookmarkSearchResults(resultsDiv, searchTerm) {
       input.value = folder.title;
       input.dataset.selectedId = folder.id;
       resultsDiv.style.display = 'none';
-      updateRule(Array.from(document.querySelectorAll('.rule')).indexOf(resultsDiv.closest('.rule')));
+      const ruleIndex = Array.from(document.querySelectorAll('.rule')).indexOf(resultsDiv.closest('.rule'));
+      updateRule(ruleIndex, { target: input, type: 'change' });
     });
     resultsDiv.appendChild(folderElement);
   });
-}
 
-// Debounce the updateBookmarkSearchResults function
-const debouncedUpdateBookmarkSearchResults = debounce(updateBookmarkSearchResults, 300);
+  if (matchingFolders.length === 0) {
+    const noResultElement = document.createElement('div');
+    noResultElement.textContent = 'No matching folders found';
+    noResultElement.className = 'search-result no-result';
+    resultsDiv.appendChild(noResultElement);
+  }
+}
 
 // Backup and restore functions
 async function backupSettings() {
@@ -484,7 +535,6 @@ async function restoreSettings() {
 // Initialize
 loadUndoRedoStacks();
 
-// Add this at the end of the file
 // Listen for changes from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "optionsChanged") {

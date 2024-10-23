@@ -1,16 +1,3 @@
-// Utility function for debouncing
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 // Error handling wrapper for async functions
 async function safeAsyncFunction(asyncFunction) {
   try {
@@ -28,16 +15,22 @@ document.addEventListener('DOMContentLoaded', () => {
     extensionEnabledToggle: document.getElementById('extensionEnabled'),
     autoBookmarkToggle: document.getElementById('autoBookmark'),
     autoCloseTabToggle: document.getElementById('autoCloseTab'),
-    backupButton: document.getElementById('backupButton'),
-    restoreButton: document.getElementById('restoreButton')
+    contentContainer: document.getElementById('contentContainer')
   };
 
+  // Hide content initially
+  elements.contentContainer.style.display = 'none';
+
   // Load current settings
-  safeAsyncFunction(loadSettings);
+  safeAsyncFunction(async () => {
+    await loadSettings();
+    // Show content after settings are loaded
+    elements.contentContainer.style.display = 'block';
+  });
 
   // Handle toggle changes
   const handleToggleChange = (toggle, storageKey) => {
-    toggle.addEventListener('change', debounce(() => {
+    toggle.addEventListener('change', () => {
       safeAsyncFunction(async () => {
         await chrome.storage.local.set({ [storageKey]: toggle.checked });
         // Notify options page about the change immediately
@@ -47,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
           value: toggle.checked 
         });
       });
-    }, 300)); // 300ms debounce
+    });
   };
 
   // Use Object.entries() to iterate over the toggle elements
@@ -69,26 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Open options button
   elements.openOptionsButton.addEventListener('click', () => chrome.runtime.openOptionsPage());
-
-  // Backup button
-  elements.backupButton.addEventListener('click', () => {
-    safeAsyncFunction(async () => {
-      const data = await chrome.storage.local.get(null);
-      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'smart-bookmark-saver-backup.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      console.log('Backup file downloaded successfully');
-    });
-  });
-
-  // TODO: Implement restore functionality here
-  // elements.restoreButton.addEventListener('click', () => {
-  //   // Add restore functionality
-  // });
 
   // Listen for changes from options page
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

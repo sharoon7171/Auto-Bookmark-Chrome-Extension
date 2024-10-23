@@ -1,23 +1,29 @@
 // Cache and utility functions
-const bookmarkFoldersCache = null;
+let bookmarkFoldersCache = null;
 
 async function getBookmarkFolders() {
   if (bookmarkFoldersCache) return bookmarkFoldersCache;
 
-  const bookmarkTreeNodes = await chrome.bookmarks.getTree();
-  const folders = [];
+  try {
+    const bookmarkTreeNodes = await chrome.bookmarks.getTree();
+    const folders = [];
 
-  function traverseBookmarks(nodes) {
-    for (const node of nodes) {
-      if (node.children) {
-        folders.push({ id: node.id, title: node.title });
-        traverseBookmarks(node.children);
+    function traverseBookmarks(nodes) {
+      for (const node of nodes) {
+        if (node.children) {
+          folders.push({ id: node.id, title: node.title });
+          traverseBookmarks(node.children);
+        }
       }
     }
-  }
 
-  traverseBookmarks(bookmarkTreeNodes);
-  return folders;
+    traverseBookmarks(bookmarkTreeNodes);
+    bookmarkFoldersCache = folders;
+    return folders;
+  } catch (error) {
+    console.error('Error fetching bookmark folders:', error);
+    return [];
+  }
 }
 
 // Bookmark and tab management functions
@@ -37,7 +43,13 @@ async function closeTab(tabId) {
     await chrome.tabs.remove(tabId);
     console.log('Tab closed:', tabId);
   } catch (error) {
-    console.error('Error closing tab:', error);
+    if (error.message.includes("Tabs cannot be edited right now")) {
+      console.warn('Unable to close tab. User may be dragging a tab. Will retry in 1 second.');
+      // Retry after a short delay
+      setTimeout(() => closeTab(tabId), 1000);
+    } else {
+      console.error('Error closing tab:', error);
+    }
   }
 }
 
@@ -81,27 +93,49 @@ async function executeRule(rule, tab, globalAutoBookmark, globalAutoCloseTab) {
 }
 
 async function executeRules(tab, isManual = false) {
-  const { rules = [], extensionEnabled, autoBookmark, autoCloseTab } = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
-  
-  if (!extensionEnabled && !isManual) return false;
-
-  const matchingRules = rules.filter(rule => {
-    if (!rule.enabled || (!rule?.domain && !rule?.contains)) return false;
+  try {
+    const { rules = [], extensionEnabled, autoBookmark, autoCloseTab } = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
     
-    const url = new URL(tab.url);
-    const domainMatch = rule?.domain ? url.hostname === rule.domain || url.hostname.endsWith(`.${rule.domain}`) : true;
-    const containsMatch = rule?.contains ? tab.url.includes(rule.contains) : true;
-    
-    return domainMatch && containsMatch;
-  }).sort((a, b) => b.priority - a.priority);
+    if (!extensionEnabled && !isManual) return false;
 
-  if (matchingRules.length > 0) {
-    const topRule = matchingRules[0];
-    await executeRule(topRule, tab, autoBookmark || isManual, autoCloseTab);
-    return true;
+    const matchingRules = rules.filter(rule => {
+      if (!rule.enabled || (!rule?.domain && !rule?.contains)) return false;
+      
+      // Parse the tab URL
+      let tabUrl;
+      try {
+        tabUrl = new URL(tab.url);
+      } catch (error) {
+        console.error('Invalid URL:', tab.url);
+        return false;
+      }
+
+      // Normalize the domain from the rule
+      const normalizedRuleDomain = rule.domain.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
+      
+      // Normalize the hostname from the tab URL
+      const normalizedTabHostname = tabUrl.hostname.replace(/^www\./, '');
+
+      // Strict domain matching
+      const domainMatch = rule?.domain ? 
+        normalizedTabHostname === normalizedRuleDomain : true;
+
+      const containsMatch = rule?.contains ? tab.url.includes(rule.contains) : true;
+      
+      return domainMatch && containsMatch;
+    }).sort((a, b) => b.priority - a.priority);
+
+    if (matchingRules.length > 0) {
+      const topRule = matchingRules[0];
+      await executeRule(topRule, tab, autoBookmark || isManual, autoCloseTab);
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Error executing rules:', error);
+    return false;
   }
-
-  return false;
 }
 
 // Event listeners
@@ -111,33 +145,51 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
+// Modify the message listener
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "manualExecute") {
     chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
-      const result = await executeRules(tabs[0], true);
-      sendResponse({success: result});
+      if (tabs.length === 0) {
+        console.error("No active tab found");
+        sendResponse({success: false, error: "No active tab found"});
+        return;
+      }
+      try {
+        const result = await executeRules(tabs[0], true);
+        sendResponse({success: result});
+      } catch (error) {
+        console.error("Error executing rules:", error);
+        sendResponse({success: false, error: error.message});
+      }
     });
     return true; // Indicates we will send a response asynchronously
   }
-});
 
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command === "apply-rules") {
-    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    if (tab) {
-      const result = await executeRules(tab, true);
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon48.png',
-        title: 'Auto Bookmark',
-        message: result ? 'Rules applied successfully!' : 'No matching rules found.'
+  if (request.action === "optionsChanged") {
+    // Relay the message to all open tabs
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        try {
+          chrome.tabs.sendMessage(tab.id, request).catch(error => {
+            console.warn(`Failed to send message to tab ${tab.id}:`, error);
+          });
+        } catch (error) {
+          console.warn(`Error sending message to tab ${tab.id}:`, error);
+        }
       });
-    }
+    });
   }
 });
 
 // Initialization
-getBookmarkFolders();
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('Extension installed');
+  getBookmarkFolders().then(() => {
+    console.log('Bookmark folders fetched successfully');
+  }).catch(error => {
+    console.error('Failed to fetch bookmark folders:', error);
+  });
+});
 
 // Storage change listener
 chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -147,14 +199,3 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 // Add this at the end of your background.js file
-
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "optionsChanged") {
-    // Relay the message to all open tabs
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach((tab) => {
-        chrome.tabs.sendMessage(tab.id, request);
-      });
-    });
-  }
-});
