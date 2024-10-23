@@ -10,20 +10,11 @@ const addRuleButton = document.getElementById('addRule');
 const extensionEnabledCheckbox = document.getElementById('extensionEnabled');
 const autoBookmarkCheckbox = document.getElementById('autoBookmark');
 const autoCloseTabCheckbox = document.getElementById('autoCloseTab');
-const backupSettingsButton = document.getElementById('backupSettings');
-const restoreSettingsButton = document.getElementById('restoreSettings');
-const restoreFileInput = document.getElementById('restoreFile');
 const notification = document.getElementById('notification');
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', initializePage);
 addRuleButton.addEventListener('click', addNewRule);
-backupSettingsButton.addEventListener('click', backupSettings);
-restoreSettingsButton.addEventListener('click', () => restoreFileInput.click());
-restoreFileInput.addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  if (file) restoreSettings(file);
-});
 
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'z') {
@@ -331,35 +322,6 @@ function updateBookmarkSearchResults(resultsDiv, searchTerm) {
     });
     resultsDiv.appendChild(folderElement);
   });
-}
-
-function backupSettings() {
-  chrome.storage.sync.get(null, (data) => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'auto_bookmark_settings.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showNotification('Settings backed up successfully', true);
-  });
-}
-
-function restoreSettings(file) {
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    try {
-      const settings = JSON.parse(event.target.result);
-      chrome.storage.sync.set(settings, () => {
-        loadAndDisplayRules();
-        showNotification('Settings restored successfully', true);
-      });
-    } catch (error) {
-      showNotification('Error restoring settings: Invalid file', false);
-    }
-  };
-  reader.readAsText(file);
 }
 
 // Initialize
