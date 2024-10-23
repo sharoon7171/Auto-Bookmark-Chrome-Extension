@@ -110,7 +110,8 @@ function createRuleElement(rule, index) {
 
   bookmarkSearchInput.addEventListener('focus', () => {
     bookmarkSearchResults.style.display = 'block';
-    updateBookmarkSearchResults(bookmarkSearchResults, bookmarkSearchInput.value);
+    bookmarkSearchInput.value = ''; // Clear the input when focused
+    updateBookmarkSearchResults(bookmarkSearchResults, '');
   });
 
   bookmarkSearchInput.addEventListener('input', () => {
@@ -120,6 +121,8 @@ function createRuleElement(rule, index) {
   document.addEventListener('click', (e) => {
     if (!bookmarkSearchInput.contains(e.target) && !bookmarkSearchResults.contains(e.target)) {
       bookmarkSearchResults.style.display = 'none';
+      // Restore the original value if no selection was made
+      bookmarkSearchInput.value = getFolderName(bookmarkSearchInput.dataset.selectedId);
     }
   });
 
@@ -321,8 +324,9 @@ function updateBookmarkSearchResults(resultsDiv, searchTerm) {
     folderElement.textContent = folder.title;
     folderElement.className = 'search-result';
     folderElement.addEventListener('click', () => {
-      resultsDiv.previousElementSibling.value = folder.title;
-      resultsDiv.previousElementSibling.dataset.selectedId = folder.id;
+      const input = resultsDiv.previousElementSibling;
+      input.value = folder.title;
+      input.dataset.selectedId = folder.id;
       resultsDiv.style.display = 'none';
       updateRule(Array.from(document.querySelectorAll('.rule')).indexOf(resultsDiv.closest('.rule')));
     });
@@ -348,6 +352,7 @@ async function backupSettings() {
     showNotification('Error creating backup', false);
   }
 }
+
 async function restoreSettings() {
   try {
     const input = document.createElement('input');
