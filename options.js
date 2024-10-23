@@ -13,7 +13,8 @@ const elements = {
   autoCloseTabCheckbox: document.getElementById('autoCloseTab'),
   notification: document.getElementById('notification'),
   backupButton: document.getElementById('backupButton'),
-  restoreButton: document.getElementById('restoreButton')
+  restoreButton: document.getElementById('restoreButton'),
+  contentContainer: document.getElementById('contentContainer')
 };
 
 // Event Listeners
@@ -296,6 +297,9 @@ async function loadAndDisplayRules() {
 }
 
 async function initializePage() {
+  // Hide content while loading
+  elements.contentContainer.style.display = 'none';
+
   const bookmarkTreeNodes = await chrome.bookmarks.getTree();
   function traverseBookmarks(nodes) {
     for (let node of nodes) {
@@ -308,10 +312,14 @@ async function initializePage() {
   traverseBookmarks(bookmarkTreeNodes);
 
   await loadAndDisplayRules();
+  await loadGlobalOptions();
 
   handleOptionChange('extensionEnabled', 'Extension');
   handleOptionChange('autoBookmark', 'Automatic bookmarking');
   handleOptionChange('autoCloseTab', 'Automatic tab closing');
+
+  // Show content after everything is loaded
+  elements.contentContainer.style.display = 'block';
 }
 
 function updateBookmarkSearchResults(resultsDiv, searchTerm) {
@@ -389,4 +397,3 @@ async function restoreSettings() {
 
 // Initialize
 loadUndoRedoStacks();
-
