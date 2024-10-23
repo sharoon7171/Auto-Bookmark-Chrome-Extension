@@ -2,24 +2,32 @@
 <html>
 <head>
   <title>Smart Bookmark Saver Options</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <h1>Smart Bookmark Saver</h1>
   <div id="notification"></div>
   <div id="contentContainer" style="display: none;">
+    <!-- Global Options -->
     <div id="globalOptions">
       <label><input type="checkbox" id="extensionEnabled"><span>Enable Extension</span></label>
       <label><input type="checkbox" id="autoBookmark"><span>Enable Automatic Bookmarking</span></label>
       <label><input type="checkbox" id="autoCloseTab"><span>Enable Automatic Tab Closing</span></label>
     </div>
+
+    <!-- Action Buttons -->
     <div class="button-container">
       <button id="addRule">Add New Rule</button>
       <button id="backupButton">Backup Settings</button>
       <button id="restoreButton">Restore Settings</button>
     </div>
+
+    <!-- Rules Section -->
     <h2>Rules</h2>
     <div class="rules-container" id="rules"></div>
+
+    <!-- How to Use Section -->
     <h2>How to Use</h2>
     <div id="howToUseSection">
       <h3>1. Creating Rules</h3>
@@ -57,6 +65,8 @@
       <h3>5. Keyboard Shortcut</h3>
       <p>Use the keyboard shortcut (set in Chrome's extension settings) to quickly apply rules to the current page.</p>
     </div>
+
+    <!-- Keyboard Shortcut Section -->
     <h2>Keyboard Shortcut</h2>
     <div id="shortcutSection">
       <p>To set up a custom keyboard shortcut for quick access:</p>
@@ -70,6 +80,18 @@
       <p>Recommended shortcut: Ctrl+Shift+B (Windows/Linux) or Command+Shift+B (Mac)</p>
     </div>
     
+    <!-- Backup and Restore Section -->
+    <h2>Backup and Restore</h2>
+    <div id="backupRestoreSection">
+      <p>You can backup your settings and rules to a JSON file, and restore them later:</p>
+      <ul>
+        <li><strong>Backup:</strong> Click the "Backup Settings" button to download a JSON file containing all your current settings and rules.</li>
+        <li><strong>Restore:</strong> Click the "Restore Settings" button and select a previously backed up JSON file to restore your settings and rules.</li>
+      </ul>
+      <p><strong>Note:</strong> Restoring settings will overwrite your current configuration. Make sure to backup your current settings before restoring.</p>
+    </div>
+
+    <!-- Credits Section -->
     <div class="credits">
       <p>Developed by Sharoon</p>
       <p>Contact: <a href="https://wa.me/923124094969" target="_blank">WhatsApp</a></p>

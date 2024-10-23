@@ -1,7 +1,6 @@
-// Cache for bookmark folders
-let bookmarkFoldersCache = null;
+// Cache and utility functions
+const bookmarkFoldersCache = null;
 
-// Function to get bookmark folders
 async function getBookmarkFolders() {
   if (bookmarkFoldersCache) return bookmarkFoldersCache;
 
@@ -9,7 +8,7 @@ async function getBookmarkFolders() {
   const folders = [];
 
   function traverseBookmarks(nodes) {
-    for (let node of nodes) {
+    for (const node of nodes) {
       if (node.children) {
         folders.push({ id: node.id, title: node.title });
         traverseBookmarks(node.children);
@@ -18,11 +17,10 @@ async function getBookmarkFolders() {
   }
 
   traverseBookmarks(bookmarkTreeNodes);
-  bookmarkFoldersCache = folders;
   return folders;
 }
 
-// Function to create a bookmark
+// Bookmark and tab management functions
 async function createBookmark(parentId, title, url) {
   try {
     const newBookmark = await chrome.bookmarks.create({ parentId, title, url });
@@ -34,7 +32,6 @@ async function createBookmark(parentId, title, url) {
   }
 }
 
-// Function to close a tab
 async function closeTab(tabId) {
   try {
     await chrome.tabs.remove(tabId);
@@ -89,11 +86,11 @@ async function executeRules(tab, isManual = false) {
   if (!extensionEnabled && !isManual) return false;
 
   const matchingRules = rules.filter(rule => {
-    if (!rule.enabled || (!rule.domain && !rule.contains)) return false;
+    if (!rule.enabled || (!rule?.domain && !rule?.contains)) return false;
     
     const url = new URL(tab.url);
-    const domainMatch = rule.domain ? url.hostname === rule.domain || url.hostname.endsWith(`.${rule.domain}`) : true;
-    const containsMatch = rule.contains ? tab.url.includes(rule.contains) : true;
+    const domainMatch = rule?.domain ? url.hostname === rule.domain || url.hostname.endsWith(`.${rule.domain}`) : true;
+    const containsMatch = rule?.contains ? tab.url.includes(rule.contains) : true;
     
     return domainMatch && containsMatch;
   }).sort((a, b) => b.priority - a.priority);
@@ -146,5 +143,18 @@ getBookmarkFolders();
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'sync' && changes.backupData) {
     console.log('Backup data changed in sync storage');
+  }
+});
+
+// Add this at the end of your background.js file
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "optionsChanged") {
+    // Relay the message to all open tabs
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        chrome.tabs.sendMessage(tab.id, request);
+      });
+    });
   }
 });

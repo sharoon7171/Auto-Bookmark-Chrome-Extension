@@ -2,34 +2,35 @@
 <html>
 <head>
   <title>Smart Bookmark Saver</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" type="text/css" href="popup.css">
 </head>
 <body>
   <div class="container">
     <h1>Smart Bookmark Saver</h1>
-    <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="extensionEnabled">
-        <span class="toggle-label">Enable Extension</span>
-      </label>
+    <div id="globalOptions">
+      <div class="toggle-container">
+        <label class="toggle">
+          <input type="checkbox" id="extensionEnabled">
+          <span class="toggle-label">Enable Extension</span>
+        </label>
+      </div>
+      <div class="toggle-container">
+        <label class="toggle">
+          <input type="checkbox" id="autoBookmark">
+          <span class="toggle-label">Auto Bookmark</span>
+        </label>
+      </div>
+      <div class="toggle-container">
+        <label class="toggle">
+          <input type="checkbox" id="autoCloseTab">
+          <span class="toggle-label">Auto Close Tab</span>
+        </label>
+      </div>
     </div>
-    <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="autoBookmark">
-        <span class="toggle-label">Auto Bookmark</span>
-      </label>
-    </div>
-    <div class="toggle-container">
-      <label class="toggle">
-        <input type="checkbox" id="autoCloseTab">
-        <span class="toggle-label">Auto Close Tab</span>
-      </label>
-    </div>
-    <button id="manualExecute" class="btn">Apply Rules</button>
-    <button id="openOptions" class="btn">Options</button>
-    <div class="backup-restore">
-      <button id="backupButton" class="btn">Backup Settings</button>
-      <button id="restoreButton" class="btn">Restore Settings</button>
+    <div class="button-container">
+      <button id="manualExecute" class="btn">Apply Rules</button>
+      <button id="openOptions" class="btn">Options</button>
     </div>
     <div class="credits">
       <p>Developed by Sharoon</p>

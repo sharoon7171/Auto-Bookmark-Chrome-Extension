@@ -1,22 +1,45 @@
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&family=Lato:wght@300;400;700&display=swap');
+
+/* Variables */
 :root {
   --primary-color: #4a90e2;
   --secondary-color: #f5f7fa;
   --text-color: #333;
   --border-color: #e0e0e0;
   --shadow-color: rgba(0, 0, 0, 0.1);
+  --font-primary: 'Poppins', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font-secondary: 'Roboto', 'Arial', 'Helvetica', sans-serif;
+  --font-accent: 'Lato', 'Arial', 'Helvetica', sans-serif;
+  --enabled-color: #2ecc71;
+  --disabled-color: #e74c3c;
 }
 
+/* Global styles */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-secondary);
   background-color: var(--secondary-color);
   color: var(--text-color);
   margin: 0;
   padding: 20px;
   min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
-h1, h2 {
-  color: var(--primary-color);
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-primary);
+}
+
+h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 24px;
+  margin-top: 30px;
+  margin-bottom: 15px;
 }
 
 /* Global options styling */
@@ -26,21 +49,17 @@ h1, h2 {
   margin-bottom: 20px;
   padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-#globalOptions:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 #globalOptions label {
   display: inline-flex;
   align-items: center;
   margin-right: 20px;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-color);
   cursor: pointer;
+  font-family: var(--font-accent);
 }
 
 /* Custom checkbox style for both global options and rule options */
@@ -54,16 +73,23 @@ h1, h2 {
   border: 2px solid var(--primary-color);
   border-radius: 3px;
   outline: none;
-  transition: all 0.3s ease;
   position: relative;
   cursor: pointer;
   vertical-align: middle;
   margin-right: 8px;
+  transition: all 0.3s ease;
 }
 
 #globalOptions input[type="checkbox"]:checked,
 .rule-options input[type="checkbox"]:checked {
-  background-color: var(--primary-color);
+  background-color: var(--enabled-color);
+  border-color: var(--enabled-color);
+}
+
+#globalOptions input[type="checkbox"]:not(:checked),
+.rule-options input[type="checkbox"]:not(:checked) {
+  background-color: var(--disabled-color);
+  border-color: var(--disabled-color);
 }
 
 #globalOptions input[type="checkbox"]:checked::before,
@@ -77,44 +103,66 @@ h1, h2 {
   transform: translate(-50%, -50%);
 }
 
-#globalOptions label:hover input[type="checkbox"],
-.rule-options label:hover input[type="checkbox"] {
-  border-color: var(--primary-color-dark);
+#globalOptions input[type="checkbox"]:not(:checked)::before,
+.rule-options input[type="checkbox"]:not(:checked)::before {
+  content: '\2716';
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#globalOptions label,
+.rule-options label {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+  cursor: pointer;
+  font-family: var(--font-accent);
 }
 
 #globalOptions label span,
 .rule-options label span {
   margin-left: 5px;
+  font-weight: 600;
 }
 
 .rule {
-    background-color: #ffffff;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    padding: 8px;
-    margin-bottom: 8px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 0.5fr 1fr 1fr 1fr;
-    gap: 8px;
-    align-items: center;
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.5fr 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
 }
 
 .rule input[type="text"],
 .rule input[type="number"],
 .rule select {
-    width: 100%;
-    padding: 6px;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 0.9em;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+  font-family: var(--font-secondary);
+  font-weight: 500;
 }
 
 .rule label {
-    display: flex;
-    align-items: center;
-    margin-right: 8px;
-    font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* Button styles */
@@ -124,9 +172,10 @@ button {
   border-radius: 4px;
   background-color: var(--primary-color);
   color: white;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-accent);
   cursor: pointer;
-  transition: background-color 0.3s ease;
   margin-right: 10px;
   margin-bottom: 10px;
 }
@@ -168,47 +217,49 @@ button:hover {
 }
 
 button:active, .btn:active {
-    transform: scale(0.98);
+  transform: scale(0.98);
 }
 
 #notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 10px 15px;
-    border-radius: 4px;
-    color: white;
-    font-weight: bold;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 #notification.show {
-    opacity: 1;
+  opacity: 1;
 }
 
 .notification-enabled {
-    background-color: #2ecc71;
+  background-color: #2ecc71;
 }
 
 .notification-disabled {
-    background-color: #e74c3c;
+  background-color: #e74c3c;
 }
 
 .credits {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: #ecf0f1;
-    border-radius: 4px;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #ecf0f1;
+  border-radius: 4px;
+  font-family: var(--font-accent);
 }
 
 .credits a {
-    color: #3498db;
-    text-decoration: none;
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 600;
 }
 
 .credits a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 .bookmark-search {
@@ -253,12 +304,25 @@ button:active, .btn:active {
   margin-bottom: 20px;
   padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  /* Remove the transition property */
 }
 
 .rule-container:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  /* Remove the transform property */
+}
+
+/* Remove any transform from child elements */
+.rule-container, .rule-container * {
+  transform: none;
+  will-change: auto;
+}
+
+/* Ensure text remains crisp without any blur effect */
+.rule-container, .rule-container * {
+  backface-visibility: visible;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 .rule-title-row, .rule {
@@ -271,14 +335,14 @@ button:active, .btn:active {
 .rule-title-row {
   background-color: var(--primary-color);
   color: white;
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px 8px 0 0;
   font-weight: bold;
 }
 
 .rule-title-row span {
-  font-weight: bold;
-  font-size: 0.9em;
+  font-weight: 700;
+  font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -298,6 +362,8 @@ button:active, .btn:active {
   border-radius: 4px;
   box-sizing: border-box;
   transition: all 0.3s ease;
+  font-family: var(--font-secondary);
+  font-size: 14px;
 }
 
 .rule input:focus, 
@@ -319,12 +385,14 @@ button:active, .btn:active {
   display: flex;
   align-items: center;
   margin-right: 10px;
-  font-size: 0.85em;
+  font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .deleteRule {
   background-color: #e74c3c;
+  font-weight: 600;
 }
 
 .deleteRule:hover {
@@ -349,6 +417,7 @@ button:active, .btn:active {
   overflow-y: auto;
   z-index: 1000;
 }
+
 /* ... rest of your existing CSS ... */
 
 #shortcutSection {
@@ -522,7 +591,7 @@ input:checked + .slider:before {
 }
 
 .rule-options input[type="checkbox"]:checked {
-  background-color: var(--primary-color);
+  background-color: #2ecc71; /* Green color for enabled state */
 }
 
 .rule-options input[type="checkbox"]:checked::before {
@@ -545,5 +614,97 @@ input:checked + .slider:before {
 
 .rule-options label:hover input[type="checkbox"] {
   border-color: var(--primary-color-dark);
+}
+
+/* Remove any transform or transition that might cause blur */
+.rule-container, .rule-container * {
+  transform: none;
+  transition: box-shadow 0.3s ease;
+  will-change: auto;
+}
+
+.rule-container:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  /* Remove transform on hover */
+}
+
+/* Ensure text remains crisp without any blur effect */
+.rule-container, .rule-container * {
+  backface-visibility: visible;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+/* Remove any transform from buttons */
+button:hover {
+  transform: none;
+}
+
+button:active, .btn:active {
+  transform: none;
+}
+
+/* Remove transitions and transforms */
+.rule-container, .rule-container * {
+  transition: none;
+  transform: none;
+}
+
+.rule-container:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+button:hover, button:active, .btn:active {
+  transform: none;
+}
+
+#backupRestoreSection {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+#backupRestoreSection p {
+  margin-bottom: 10px;
+}
+
+#backupRestoreSection ul {
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+
+#backupRestoreSection li {
+  margin-bottom: 5px;
+}
+
+/* Update the colors for enabled and disabled states */
+.rule-options input[type="checkbox"]:checked {
+  background-color: #2ecc71; /* Green color for enabled state */
+}
+
+.rule-options input[type="checkbox"]:not(:checked) {
+  background-color: #e74c3c; /* Red color for disabled state */
+  border-color: #e74c3c;
+}
+
+.rule-options input[type="checkbox"]:not(:checked)::before {
+  content: '\2716'; /* X mark for disabled state */
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Update notification colors */
+.notification-enabled {
+  background-color: #2ecc71; /* Green for enabled notifications */
+}
+
+.notification-disabled {
+  background-color: #e74c3c; /* Red for disabled notifications */
 }
 

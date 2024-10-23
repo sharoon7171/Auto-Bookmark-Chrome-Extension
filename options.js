@@ -33,7 +33,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Functions
+// Utility functions
 async function loadUndoRedoStacks() {
   const result = await chrome.storage.local.get(['undoStack', 'redoStack']);
   undoStack = result.undoStack || [];
@@ -50,7 +50,10 @@ function saveGlobalOptions() {
     autoBookmark: elements.autoBookmarkCheckbox.checked,
     autoCloseTab: elements.autoCloseTabCheckbox.checked
   };
-  chrome.storage.local.set(options);
+  chrome.storage.local.set(options, () => {
+    // Notify popup about the changes
+    chrome.runtime.sendMessage({ action: "optionsChanged" });
+  });
 }
 
 async function loadGlobalOptions() {
@@ -60,6 +63,30 @@ async function loadGlobalOptions() {
   elements.autoCloseTabCheckbox.checked = result.autoCloseTab ?? false;
 }
 
+// Utility function for debouncing
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Error handling wrapper for async functions
+async function safeAsyncFunction(asyncFunction) {
+  try {
+    return await asyncFunction();
+  } catch (error) {
+    console.error('An error occurred:', error);
+    showNotification('An error occurred. Please try again.', false);
+  }
+}
+
+// Rule management functions
 function createRuleElement(rule, index) {
   const ruleDiv = document.createElement('div');
   ruleDiv.className = 'rule-container';
@@ -116,7 +143,7 @@ function createRuleElement(rule, index) {
   });
 
   bookmarkSearchInput.addEventListener('input', () => {
-    updateBookmarkSearchResults(bookmarkSearchResults, bookmarkSearchInput.value);
+    debouncedUpdateBookmarkSearchResults(bookmarkSearchResults, bookmarkSearchInput.value);
   });
 
   document.addEventListener('click', (e) => {
@@ -135,27 +162,67 @@ function createRuleElement(rule, index) {
 
 function updateRule(index) {
   const ruleDiv = document.querySelectorAll('.rule')[index];
-  const rule = {};
-  ruleDiv.querySelectorAll('[data-field]').forEach(input => {
-    if (input.type === 'checkbox') {
-      rule[input.dataset.field] = input.checked;
-    } else if (input.dataset.field === 'bookmarkLocation') {
-      rule[input.dataset.field] = input.dataset.selectedId;
-    } else {
-      rule[input.dataset.field] = input.value;
-    }
-  });
+  const ruleInputs = ruleDiv.querySelectorAll('[data-field]');
+  const newRule = Object.fromEntries(
+    Array.from(ruleInputs).map(input => {
+      const key = input.dataset.field;
+      let value;
+      if (input.type === 'checkbox') {
+        value = input.checked;
+      } else if (input.dataset.field === 'bookmarkLocation') {
+        value = input.dataset.selectedId;
+      } else {
+        value = input.value;
+      }
+      return [key, value];
+    })
+  );
   
-  chrome.storage.local.get('rules', (data) => {
+  safeAsyncFunction(async () => {
+    const data = await chrome.storage.local.get('rules');
     const rules = data.rules || [];
     const oldRule = rules[index];
     undoStack.push({ action: 'update', index, oldRule });
     redoStack = [];
-    rules[index] = rule;
-    chrome.storage.local.set({rules}, () => {
-      console.log('Rule updated:', rule);
-      showNotification('Rule updated', true);
-    });
+    rules[index] = newRule;
+    await chrome.storage.local.set({rules});
+    
+    // Generate detailed notification message
+    let changes = [];
+    if (oldRule.domain !== newRule.domain) {
+      changes.push(`URL domain ${newRule.domain ? 'added' : 'removed'} (${newRule.domain || oldRule.domain})`);
+    }
+    if (oldRule.contains !== newRule.contains) {
+      changes.push(`URL contains ${newRule.contains ? 'added' : 'removed'} (${newRule.contains || oldRule.contains})`);
+    }
+    if (oldRule.priority !== newRule.priority) {
+      changes.push(`Priority set to (${newRule.priority})`);
+    }
+    if (oldRule.bookmarkLocation !== newRule.bookmarkLocation) {
+      changes.push(`Selected bookmark (${getFolderName(newRule.bookmarkLocation)})`);
+    }
+    if (oldRule.bookmarkAction !== newRule.bookmarkAction) {
+      changes.push(`Bookmark action changed (${newRule.bookmarkAction})`);
+    }
+    if (oldRule.enabled !== newRule.enabled) {
+      changes.push(`Rule ${newRule.enabled ? 'enabled' : 'disabled'}`);
+    }
+    if (oldRule.autoExecute !== newRule.autoExecute) {
+      changes.push(`Auto bookmark ${newRule.autoExecute ? 'enabled' : 'disabled'}`);
+    }
+    if (oldRule.closeTab !== newRule.closeTab) {
+      changes.push(`Auto close tab ${newRule.closeTab ? 'enabled' : 'disabled'}`);
+    }
+    
+    let notificationMessage = `Rule ${index + 1} updated: ${changes.join(', ')}`;
+    if (notificationMessage) {
+      // Determine if the notification should be green or red based on the specific change
+      let isEnabled = true;
+      if (changes.some(change => change.includes('disabled'))) {
+        isEnabled = false;
+      }
+      showNotification(notificationMessage, isEnabled);
+    }
   });
 }
 
@@ -210,7 +277,7 @@ function deleteRule(index) {
     rules.splice(index, 1);
     chrome.storage.local.set({rules}, () => {
       displayRules();
-      showNotification('Rule deleted', false);
+      showNotification(`Rule ${index + 1} deleted successfully`, false);
     });
   });
 }
@@ -243,11 +310,12 @@ function addNewRule() {
     rules.push(newRule);
     chrome.storage.local.set({rules}, () => {
       displayRules();
-      showNotification('New rule added', true);
+      showNotification('New rule added successfully', true);
     });
   });
 }
 
+// UI functions
 function showNotification(message, isEnabled = true) {
   clearTimeout(notificationTimeout);
   
@@ -267,7 +335,21 @@ function handleOptionChange(optionId, optionName) {
   checkbox.addEventListener('change', (e) => {
     saveGlobalOptions();
     const status = e.target.checked ? 'enabled' : 'disabled';
-    showNotification(`${optionName} ${status}`, e.target.checked);
+    let notificationMessage;
+    switch (optionName) {
+      case 'Extension':
+        notificationMessage = `Extension ${status} globally`;
+        break;
+      case 'Automatic bookmarking':
+        notificationMessage = `Automatic bookmarking ${status} for all rules`;
+        break;
+      case 'Automatic tab closing':
+        notificationMessage = `Automatic tab closing ${status} for all rules`;
+        break;
+      default:
+        notificationMessage = `${optionName} ${status}`;
+    }
+    showNotification(notificationMessage, e.target.checked);
   });
 }
 
@@ -302,7 +384,7 @@ async function initializePage() {
 
   const bookmarkTreeNodes = await chrome.bookmarks.getTree();
   function traverseBookmarks(nodes) {
-    for (let node of nodes) {
+    for (const node of nodes) {
       if (node.children) {
         bookmarkFolders.push({id: node.id, title: node.title});
         traverseBookmarks(node.children);
@@ -342,6 +424,10 @@ function updateBookmarkSearchResults(resultsDiv, searchTerm) {
   });
 }
 
+// Debounce the updateBookmarkSearchResults function
+const debouncedUpdateBookmarkSearchResults = debounce(updateBookmarkSearchResults, 300);
+
+// Backup and restore functions
 async function backupSettings() {
   try {
     const data = await chrome.storage.local.get(null);
@@ -354,10 +440,10 @@ async function backupSettings() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showNotification('Backup file downloaded successfully', true);
+    showNotification('Settings backup created successfully', true);
   } catch (error) {
     console.error('Error creating backup:', error);
-    showNotification('Error creating backup', false);
+    showNotification('Error: Unable to create settings backup', false);
   }
 }
 
@@ -381,7 +467,7 @@ async function restoreSettings() {
           loadGlobalOptions();
         } catch (error) {
           console.error('Error parsing backup file:', error);
-          showNotification('Error restoring settings: Invalid backup file', false);
+          showNotification('Error: Unable to restore settings', false);
         }
       };
       
@@ -391,9 +477,46 @@ async function restoreSettings() {
     input.click();
   } catch (error) {
     console.error('Error restoring settings:', error);
-    showNotification('Error restoring settings', false);
+    showNotification('Error: Unable to restore settings', false);
   }
 }
 
 // Initialize
 loadUndoRedoStacks();
+
+// Add this at the end of the file
+// Listen for changes from popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "optionsChanged") {
+    loadGlobalOptions();
+  }
+});
+
+// Add this function at the top level of your file
+function updateGlobalOption(key, value) {
+  const checkbox = document.getElementById(key);
+  if (checkbox) {
+    checkbox.checked = value;
+    // Trigger the change event to update UI and show notification
+    const event = new Event('change');
+    checkbox.dispatchEvent(event);
+  }
+}
+
+// Update the listener at the end of the file
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "optionsChanged") {
+    updateGlobalOption(request.key, request.value);
+  }
+});
+
+// Add a listener for storage changes as a backup
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local') {
+    for (let [key, { newValue }] of Object.entries(changes)) {
+      if (['extensionEnabled', 'autoBookmark', 'autoCloseTab'].includes(key)) {
+        updateGlobalOption(key, newValue);
+      }
+    }
+  }
+});

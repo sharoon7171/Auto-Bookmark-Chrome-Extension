@@ -1,18 +1,28 @@
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&family=Lato:wght@300;400;700&display=swap');
+
 :root {
   --primary-color: #4a90e2;
   --secondary-color: #f5f7fa;
   --text-color: #333;
   --border-color: #e0e0e0;
   --shadow-color: rgba(0, 0, 0, 0.1);
+  --font-primary: 'Poppins', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font-secondary: 'Roboto', 'Arial', 'Helvetica', sans-serif;
+  --font-accent: 'Lato', 'Arial', 'Helvetica', sans-serif;
+  --enabled-color: #2ecc71;
+  --disabled-color: #e74c3c;
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-secondary);
   background-color: var(--secondary-color);
   color: var(--text-color);
   margin: 0;
   padding: 20px;
   width: 300px;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 .container {
@@ -23,11 +33,21 @@ body {
 }
 
 h1 {
+  font-family: var(--font-primary);
   color: var(--primary-color);
   font-size: 24px;
   margin-top: 0;
   margin-bottom: 20px;
   text-align: center;
+  font-weight: 700;
+}
+
+#globalOptions {
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  padding: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .toggle-container {
@@ -50,15 +70,21 @@ h1 {
   border: 2px solid var(--primary-color);
   border-radius: 3px;
   outline: none;
-  transition: all 0.3s ease;
   position: relative;
   cursor: pointer;
   vertical-align: middle;
   margin-right: 8px;
+  transition: all 0.3s ease;
 }
 
 .toggle input[type="checkbox"]:checked {
-  background-color: var(--primary-color);
+  background-color: var(--enabled-color);
+  border-color: var(--enabled-color);
+}
+
+.toggle input[type="checkbox"]:not(:checked) {
+  background-color: var(--disabled-color);
+  border-color: var(--disabled-color);
 }
 
 .toggle input[type="checkbox"]:checked::before {
@@ -71,36 +97,46 @@ h1 {
   transform: translate(-50%, -50%);
 }
 
-.toggle:hover input[type="checkbox"] {
-  border-color: var(--primary-color-dark);
+.toggle input[type="checkbox"]:not(:checked)::before {
+  content: '\2716';
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .toggle-label {
   margin-left: 5px;
+  font-weight: 600;
+  font-family: var(--font-accent);
+  font-size: 14px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
 }
 
 .btn {
-  display: block;
-  width: 100%;
+  flex: 1;
   padding: 10px 15px;
-  margin-bottom: 10px;
+  margin: 0 5px;
   background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-accent);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 .btn:hover {
   background-color: #3a7bc8;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px var(--shadow-color);
-}
-
-.btn:active {
-  transform: scale(0.98);
 }
 
 .credits {
@@ -108,6 +144,8 @@ h1 {
   text-align: center;
   font-size: 12px;
   color: #5f6368;
+  font-weight: 500;
+  font-family: var(--font-accent);
 }
 
 .credits p {
@@ -117,6 +155,7 @@ h1 {
 .credits a {
   color: var(--primary-color);
   text-decoration: none;
+  font-weight: 600;
 }
 
 .credits a:hover {
