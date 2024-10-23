@@ -44,7 +44,7 @@ async function closeTab(tabId) {
   }
 }
 
-// Function to execute a rule
+// Rule execution functions
 async function executeRule(rule, tab, globalAutoBookmark, globalAutoCloseTab) {
   if (!globalAutoBookmark) {
     if (globalAutoCloseTab && rule.closeTab) {
@@ -83,21 +83,16 @@ async function executeRule(rule, tab, globalAutoBookmark, globalAutoCloseTab) {
   }
 }
 
-// Function to execute rules
 async function executeRules(tab, isManual = false) {
-  const data = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
+  const { rules = [], extensionEnabled, autoBookmark, autoCloseTab } = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
   
-  if (!data.extensionEnabled && !isManual) return false;
+  if (!extensionEnabled && !isManual) return false;
 
-  const rules = data.rules || [];
   const matchingRules = rules.filter(rule => {
-    if (!rule.enabled) return false;
-    
-    // Only consider rules with non-empty domain or contains fields
-    if (!rule.domain && !rule.contains) return false;
+    if (!rule.enabled || (!rule.domain && !rule.contains)) return false;
     
     const url = new URL(tab.url);
-    const domainMatch = rule.domain ? url.hostname === rule.domain || url.hostname.endsWith('.' + rule.domain) : true;
+    const domainMatch = rule.domain ? url.hostname === rule.domain || url.hostname.endsWith(`.${rule.domain}`) : true;
     const containsMatch = rule.contains ? tab.url.includes(rule.contains) : true;
     
     return domainMatch && containsMatch;
@@ -105,7 +100,7 @@ async function executeRules(tab, isManual = false) {
 
   if (matchingRules.length > 0) {
     const topRule = matchingRules[0];
-    await executeRule(topRule, tab, data.autoBookmark || isManual, data.autoCloseTab);
+    await executeRule(topRule, tab, autoBookmark || isManual, autoCloseTab);
     return true;
   }
 
@@ -131,9 +126,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "apply-rules") {
-    const tabs = await chrome.tabs.query({active: true, currentWindow: true});
-    if (tabs[0]) {
-      const result = await executeRules(tabs[0], true);
+    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+    if (tab) {
+      const result = await executeRules(tab, true);
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icon48.png',
@@ -144,5 +139,12 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-// Initialize bookmark folders cache
+// Initialization
 getBookmarkFolders();
+
+// Storage change listener
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'sync' && changes.backupData) {
+    console.log('Backup data changed in sync storage');
+  }
+});

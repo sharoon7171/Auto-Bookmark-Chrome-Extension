@@ -5,16 +5,22 @@ let redoStack = [];
 let notificationTimeout;
 
 // DOM Elements
-const rulesContainer = document.getElementById('rules');
-const addRuleButton = document.getElementById('addRule');
-const extensionEnabledCheckbox = document.getElementById('extensionEnabled');
-const autoBookmarkCheckbox = document.getElementById('autoBookmark');
-const autoCloseTabCheckbox = document.getElementById('autoCloseTab');
-const notification = document.getElementById('notification');
+const elements = {
+  rulesContainer: document.getElementById('rules'),
+  addRuleButton: document.getElementById('addRule'),
+  extensionEnabledCheckbox: document.getElementById('extensionEnabled'),
+  autoBookmarkCheckbox: document.getElementById('autoBookmark'),
+  autoCloseTabCheckbox: document.getElementById('autoCloseTab'),
+  notification: document.getElementById('notification'),
+  backupButton: document.getElementById('backupButton'),
+  restoreButton: document.getElementById('restoreButton')
+};
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', initializePage);
-addRuleButton.addEventListener('click', addNewRule);
+elements.addRuleButton.addEventListener('click', addNewRule);
+elements.backupButton.addEventListener('click', backupSettings);
+elements.restoreButton.addEventListener('click', restoreSettings);
 
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'z') {
@@ -39,18 +45,18 @@ function saveUndoRedoStacks() {
 
 function saveGlobalOptions() {
   const options = {
-    extensionEnabled: extensionEnabledCheckbox.checked,
-    autoBookmark: autoBookmarkCheckbox.checked,
-    autoCloseTab: autoCloseTabCheckbox.checked
+    extensionEnabled: elements.extensionEnabledCheckbox.checked,
+    autoBookmark: elements.autoBookmarkCheckbox.checked,
+    autoCloseTab: elements.autoCloseTabCheckbox.checked
   };
   chrome.storage.local.set(options);
 }
 
 async function loadGlobalOptions() {
   const result = await chrome.storage.local.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab']);
-  extensionEnabledCheckbox.checked = result.extensionEnabled ?? true;
-  autoBookmarkCheckbox.checked = result.autoBookmark ?? true;
-  autoCloseTabCheckbox.checked = result.autoCloseTab ?? true;
+  elements.extensionEnabledCheckbox.checked = result.extensionEnabled ?? true;
+  elements.autoBookmarkCheckbox.checked = result.autoBookmark ?? true;
+  elements.autoCloseTabCheckbox.checked = result.autoCloseTab ?? false;
 }
 
 function createRuleElement(rule, index) {
@@ -206,12 +212,12 @@ function deleteRule(index) {
 }
 
 function displayRules() {
-  rulesContainer.innerHTML = '';
+  elements.rulesContainer.innerHTML = '';
   chrome.storage.local.get('rules', (data) => {
     const rules = data.rules || [];
     rules.forEach((rule, index) => {
       const ruleElement = createRuleElement(rule, index);
-      rulesContainer.appendChild(ruleElement);
+      elements.rulesContainer.appendChild(ruleElement);
     });
   });
 }
@@ -241,14 +247,14 @@ function addNewRule() {
 function showNotification(message, isEnabled = true) {
   clearTimeout(notificationTimeout);
   
-  notification.textContent = message;
-  notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
-  notification.classList.add('show');
+  elements.notification.textContent = message;
+  elements.notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
+  elements.notification.classList.add('show');
   
-  notification.offsetHeight; // Trigger reflow to restart the animation
+  elements.notification.offsetHeight; // Trigger reflow to restart the animation
 
   notificationTimeout = setTimeout(() => {
-    notification.classList.remove('show');
+    elements.notification.classList.remove('show');
   }, 3000);
 }
 
@@ -275,14 +281,14 @@ function clearUndoRedoStacks() {
 async function loadAndDisplayRules() {
   const data = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
   const rules = data.rules || [];
-  extensionEnabledCheckbox.checked = data.extensionEnabled ?? true;
-  autoBookmarkCheckbox.checked = data.autoBookmark ?? true;
-  autoCloseTabCheckbox.checked = data.autoCloseTab ?? false;
+  elements.extensionEnabledCheckbox.checked = data.extensionEnabled ?? true;
+  elements.autoBookmarkCheckbox.checked = data.autoBookmark ?? true;
+  elements.autoCloseTabCheckbox.checked = data.autoCloseTab ?? false;
 
-  rulesContainer.innerHTML = '';
+  elements.rulesContainer.innerHTML = '';
   rules.forEach((rule, index) => {
     const ruleElement = createRuleElement(rule, index);
-    rulesContainer.appendChild(ruleElement);
+    elements.rulesContainer.appendChild(ruleElement);
   });
 }
 
@@ -322,6 +328,58 @@ function updateBookmarkSearchResults(resultsDiv, searchTerm) {
     });
     resultsDiv.appendChild(folderElement);
   });
+}
+
+async function backupSettings() {
+  try {
+    const data = await chrome.storage.local.get(null);
+    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'smart-bookmark-saver-backup.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification('Backup file downloaded successfully', true);
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    showNotification('Error creating backup', false);
+  }
+}
+async function restoreSettings() {
+  try {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    
+    input.onchange = async (event) => {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          await chrome.storage.local.clear();
+          await chrome.storage.local.set(data);
+          showNotification('Settings restored successfully', true);
+          loadAndDisplayRules();
+          loadGlobalOptions();
+        } catch (error) {
+          console.error('Error parsing backup file:', error);
+          showNotification('Error restoring settings: Invalid backup file', false);
+        }
+      };
+      
+      reader.readAsText(file);
+    };
+    
+    input.click();
+  } catch (error) {
+    console.error('Error restoring settings:', error);
+    showNotification('Error restoring settings', false);
+  }
 }
 
 // Initialize
