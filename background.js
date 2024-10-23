@@ -1,3 +1,12 @@
+// Add this at the top of the file
+let optionsVersion = 1;
+
+// Add this function
+function updateOptionsVersion() {
+  optionsVersion++;
+  chrome.runtime.sendMessage({ action: "updateOptionsVersion", version: optionsVersion });
+}
+
 // Cache and utility functions
 let bookmarkFoldersCache = null;
 
@@ -54,14 +63,7 @@ async function closeTab(tabId) {
 }
 
 // Rule execution functions
-async function executeRule(rule, tab, globalAutoBookmark, globalAutoCloseTab) {
-  if (!globalAutoBookmark) {
-    if (globalAutoCloseTab && rule.closeTab) {
-      await closeTab(tab.id);
-    }
-    return;
-  }
-
+async function executeRule(rule, tab, isManual, globalAutoCloseTab) {
   const existingBookmarks = await chrome.bookmarks.search({ url: tab.url });
   const bookmarkInfo = { title: tab.title, url: tab.url };
 
@@ -87,6 +89,7 @@ async function executeRule(rule, tab, globalAutoBookmark, globalAutoCloseTab) {
       break;
   }
 
+  // Only close the tab if global autoCloseTab is enabled and the rule's closeTab is true
   if (globalAutoCloseTab && rule.closeTab) {
     await closeTab(tab.id);
   }
@@ -96,10 +99,18 @@ async function executeRules(tab, isManual = false) {
   try {
     const { rules = [], extensionEnabled, autoBookmark, autoCloseTab } = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
     
-    if (!extensionEnabled && !isManual) return false;
+    // If the extension is disabled, don't apply any rules, even manual
+    if (!extensionEnabled) return false;
 
     const matchingRules = rules.filter(rule => {
-      if (!rule.enabled || (!rule?.domain && !rule?.contains)) return false;
+      // Check if the rule is enabled
+      if (!rule.enabled) return false;
+
+      // For automatic execution, check global autoBookmark and rule's autoExecute
+      if (!isManual && (!autoBookmark || !rule.autoExecute)) return false;
+
+      // If there's no domain or contains, skip this rule
+      if (!rule.domain && !rule.contains) return false;
       
       // Parse the tab URL
       let tabUrl;
@@ -117,17 +128,18 @@ async function executeRules(tab, isManual = false) {
       const normalizedTabHostname = tabUrl.hostname.replace(/^www\./, '');
 
       // Strict domain matching
-      const domainMatch = rule?.domain ? 
+      const domainMatch = rule.domain ? 
         normalizedTabHostname === normalizedRuleDomain : true;
 
-      const containsMatch = rule?.contains ? tab.url.includes(rule.contains) : true;
+      const containsMatch = rule.contains ? tab.url.includes(rule.contains) : true;
       
       return domainMatch && containsMatch;
     }).sort((a, b) => b.priority - a.priority);
 
     if (matchingRules.length > 0) {
       const topRule = matchingRules[0];
-      await executeRule(topRule, tab, autoBookmark || isManual, autoCloseTab);
+      // Pass the global autoCloseTab setting to executeRule
+      await executeRule(topRule, tab, isManual, autoCloseTab);
       return true;
     }
 
@@ -178,6 +190,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       });
     });
+    updateOptionsVersion();
+  } else if (request.action === "getOptionsVersion") {
+    sendResponse({ version: optionsVersion });
+    return true; // Indicates we will send a response asynchronously
   }
 });
 
@@ -199,3 +215,31 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 // Add this at the end of your background.js file
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command === "apply-rules") {
+    executeRulesForActiveTab();
+  }
+});
+
+// Listen for custom shortcut
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "customShortcut") {
+    executeRulesForActiveTab();
+    sendResponse({success: true});
+    return true; // Indicates we will send a response asynchronously
+  }
+});
+
+function executeRulesForActiveTab() {
+  chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
+    if (tabs.length > 0) {
+      try {
+        const result = await executeRules(tabs[0], true);
+        console.log("Rules applied:", result);
+      } catch (error) {
+        console.error("Error executing rules:", error);
+      }
+    }
+  });
+}

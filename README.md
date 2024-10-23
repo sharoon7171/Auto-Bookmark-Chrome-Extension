@@ -68,6 +68,18 @@ The extension offers a comprehensive options page where you can:
    - Action: Save to "Recipes" folder
    - Auto-execute but don't close tab for easy reference while cooking
 
+## Keyboard Shortcut
+
+To set up a custom keyboard shortcut for quick access:
+
+1. Open the extension's options page
+2. In the "Global Options" section at the top, find the custom shortcut input
+3. Click the "Set Shortcut" button next to the input field
+4. Press your desired key combination (e.g., Ctrl+Shift+B)
+5. The shortcut will be saved automatically
+
+You can now use this custom shortcut to quickly apply bookmarking rules to the current page.
+
 ## Installation Instructions
 
 1. Download the repository as a ZIP file

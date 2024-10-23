@@ -183,15 +183,27 @@ function updateRule(index, event) {
       if (newValue.length > oldValue.length) {
         showNotification(`Adding "${newValue}"`, true);
       } else if (newValue.length < oldValue.length) {
-        showNotification(`Removing "${oldValue}"`, false);
+        const removedPart = oldValue.slice(newValue.length);
+        showNotification(`"${removedPart}" is Removed`, false);
+        
+        // Prevent any subsequent calls to showNotification for a short period
+        changedInput.dataset.notificationLock = 'true';
+        setTimeout(() => {
+          changedInput.dataset.notificationLock = 'false';
+        }, 3100); // Slightly longer than the notification duration
       }
       
       changedInput.dataset.oldValue = newValue;
     }
+  } else if (changedInput && changedInput.type === 'checkbox') {
+    const status = changedInput.checked ? 'Enabled' : 'Disabled';
+    showNotification(`${changedInput.dataset.field} ${status} for Rule ${index + 1}`, changedInput.checked);
   }
 
-  // Save the rule immediately
-  saveRule(index, newRule);
+  // Only save the rule and show notification if not locked
+  if (changedInput.dataset.notificationLock !== 'true') {
+    saveRule(index, newRule);
+  }
 }
 
 function saveRule(index, newRule) {
@@ -334,10 +346,16 @@ function addNewRule() {
 
 // UI functions
 function showNotification(message, isEnabled = true) {
+  const activeInputs = document.querySelectorAll('input[data-notification-lock="true"]');
+  if (activeInputs.length > 0) {
+    return; // Don't show notification if there's an active lock
+  }
+
   clearTimeout(notificationTimeout);
   
   elements.notification.textContent = message;
-  elements.notification.className = isEnabled ? 'notification-enabled' : 'notification-disabled';
+  elements.notification.classList.remove('notification-enabled', 'notification-disabled');
+  elements.notification.classList.add(isEnabled ? 'notification-enabled' : 'notification-disabled');
   elements.notification.classList.remove('show');
   
   // Force a reflow
@@ -569,4 +587,94 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       }
     }
   }
+});
+
+// Add these functions and event listeners at the end of the file
+
+function setCustomShortcut() {
+  const shortcutInput = document.getElementById('customShortcut');
+  const setShortcutButton = document.getElementById('setShortcut');
+
+  let listening = false;
+
+  setShortcutButton.addEventListener('click', () => {
+    if (listening) {
+      listening = false;
+      setShortcutButton.textContent = 'Set Shortcut';
+      return;
+    }
+
+    listening = true;
+    shortcutInput.value = '';
+    setShortcutButton.textContent = 'Cancel';
+
+    const keyHandler = (e) => {
+      e.preventDefault();
+      const keys = [];
+      if (e.ctrlKey) keys.push('Ctrl');
+      if (e.altKey) keys.push('Alt');
+      if (e.shiftKey) keys.push('Shift');
+      if (e.metaKey) keys.push('Meta');
+      if (e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Shift' && e.key !== 'Meta') {
+        keys.push(e.key.toUpperCase());
+      }
+      shortcutInput.value = keys.join('+');
+    };
+
+    const stopListening = () => {
+      listening = false;
+      setShortcutButton.textContent = 'Set Shortcut';
+      document.removeEventListener('keydown', keyHandler);
+      document.removeEventListener('keyup', stopListening);
+      
+      // Save the custom shortcut
+      chrome.storage.local.set({ customShortcut: shortcutInput.value }, () => {
+        showNotification('Custom shortcut saved successfully', true);
+      });
+    };
+
+    document.addEventListener('keydown', keyHandler);
+    document.addEventListener('keyup', stopListening);
+  });
+}
+
+// Load the saved custom shortcut
+function loadCustomShortcut() {
+  chrome.storage.local.get('customShortcut', (result) => {
+    if (result.customShortcut) {
+      document.getElementById('customShortcut').value = result.customShortcut;
+    }
+  });
+}
+
+// Call these functions when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  // ... (existing code)
+
+  setCustomShortcut();
+  loadCustomShortcut();
+});
+
+// Add this at the beginning of the file
+function checkVersion() {
+  chrome.runtime.sendMessage({ action: "getOptionsVersion" }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error("Error getting options version:", chrome.runtime.lastError);
+      return;
+    }
+    if (response && response.version) {
+      const currentVersion = new URLSearchParams(window.location.search).get('v');
+      if (response.version > currentVersion) {
+        window.location.href = `options.html?v=${response.version}`;
+      }
+    } else {
+      console.warn("Received invalid response for options version");
+    }
+  });
+}
+
+// Call this function at the start of your initialization
+document.addEventListener('DOMContentLoaded', () => {
+  checkVersion();
+  // Rest of your initialization code...
 });

@@ -61,7 +61,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Open options button
-  elements.openOptionsButton.addEventListener('click', () => chrome.runtime.openOptionsPage());
+  elements.openOptionsButton.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: "getOptionsVersion" }, (response) => {
+      chrome.runtime.openOptionsPage(() => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          const optionsTab = tabs[0];
+          chrome.tabs.update(optionsTab.id, { url: `options.html?v=${response.version}` });
+        });
+      });
+    });
+  });
 
   // Listen for changes from options page
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

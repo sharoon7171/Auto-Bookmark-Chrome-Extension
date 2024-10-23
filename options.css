@@ -35,6 +35,12 @@ body {
   min-height: 100vh;
   font-size: 16px;
   line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1600px; /* Increased from 1200px to 1600px */
+  margin: 0 auto;
+  padding: 20px;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -53,25 +59,28 @@ h2 {
 }
 
 #globalOptions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
   background-color: #fff;
   border-radius: 8px;
   margin-bottom: 20px;
-  padding: 20px;
-  box-shadow: 
-    0 3px 6px rgba(0,0,0,0.16), 
-    0 3px 6px rgba(0,0,0,0.23);
+  padding: 15px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 }
 
-#globalOptions label,
-.rule-options label {
-  display: inline-flex;
+#globalOptions .left-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+#globalOptions label {
+  display: flex;
   align-items: center;
-  margin-right: 20px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-color);
-  cursor: pointer;
-  font-family: var(--font-accent);
+  margin: 0;
 }
 
 #globalOptions input[type="checkbox"],
@@ -209,9 +218,9 @@ button:active {
 
 .button-container {
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
@@ -492,3 +501,102 @@ button:active {
   background: var(--primary-color);
   color: white;
 }
+
+/* Add these styles at the end of the file */
+
+#customShortcutSection {
+  display: flex;
+  align-items: stretch;
+  margin-left: auto;
+}
+
+#customShortcut {
+  width: 150px;
+  padding: 0 8px;
+  font-size: 14px;
+  border: 1px solid #dadce0;
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  box-sizing: border-box;
+}
+
+#setShortcut {
+  padding: 0 15px;
+  white-space: nowrap;
+  font-size: 14px;
+  border: 1px solid var(--primary-color);
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  box-sizing: border-box;
+}
+
+#setShortcut:hover {
+  background-color: #3a7bc8;
+}
+
+#customShortcut,
+#setShortcut {
+  height: 36px;
+  line-height: 34px;
+}
+
+/* Remove focus outline and add a subtle box-shadow instead */
+#customShortcut:focus,
+#setShortcut:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+}
+
+/* Adjust the global options container */
+#globalOptions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  padding: 15px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+}
+
+#globalOptions > * {
+  margin: 0;
+}
+
+#shortcutInstructions {
+  font-size: 14px;
+  color: #666;
+  margin-top: 10px;
+}
+
+/* Remove any duplicate styles for #customShortcutSection if they exist elsewhere in the file */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

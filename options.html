@@ -13,9 +13,15 @@
   <div id="contentContainer" style="display: none;">
     <!-- Global Options -->
     <div id="globalOptions">
-      <label><input type="checkbox" id="extensionEnabled"><span>Enable Extension</span></label>
-      <label><input type="checkbox" id="autoBookmark"><span>Enable Automatic Bookmarking</span></label>
-      <label><input type="checkbox" id="autoCloseTab"><span>Enable Automatic Tab Closing</span></label>
+      <div class="left-options">
+        <label><input type="checkbox" id="extensionEnabled"><span>Enable Extension</span></label>
+        <label><input type="checkbox" id="autoBookmark"><span>Enable Automatic Bookmarking</span></label>
+        <label><input type="checkbox" id="autoCloseTab"><span>Enable Automatic Tab Closing</span></label>
+      </div>
+      <div id="customShortcutSection">
+        <input type="text" id="customShortcut" placeholder="Custom Shortcut" readonly>
+        <button id="setShortcut">Set Shortcut</button>
+      </div>
     </div>
 
     <!-- Action Buttons -->
@@ -65,7 +71,7 @@
       <p>Click the extension icon and use the "Apply Rules" button to manually execute rules for the current page.</p>
 
       <h3>5. Keyboard Shortcut</h3>
-      <p>Use the keyboard shortcut (set in Chrome's extension settings) to quickly apply rules to the current page.</p>
+      <p>Set a custom keyboard shortcut in the "Global Options" section at the top of this page to quickly apply rules to the current page.</p>
     </div>
 
     <!-- Keyboard Shortcut Section -->
@@ -73,13 +79,12 @@
     <div id="shortcutSection">
       <p>To set up a custom keyboard shortcut for quick access:</p>
       <ol>
-        <li>Go to Chrome's Extensions page (<span class="selectable">chrome://extensions</span>)</li>
-        <li>Click on the menu icon (hamburger menu) in the top left</li>
-        <li>Select "Keyboard shortcuts" from the menu</li>
-        <li>Find "Auto Bookmark" in the list</li>
-        <li>Set your desired shortcut for "Apply bookmarking rules"</li>
+        <li>Find the custom shortcut input in the "Global Options" section at the top of this page</li>
+        <li>Click on the "Set Shortcut" button next to the input field</li>
+        <li>Press your desired key combination (e.g., Ctrl+Shift+B)</li>
+        <li>The shortcut will be saved automatically</li>
       </ol>
-      <p>Recommended shortcut: Ctrl+Shift+B (Windows/Linux) or Command+Shift+B (Mac)</p>
+      <p>You can now use this custom shortcut to quickly apply bookmarking rules to the current page.</p>
     </div>
     
     <!-- Backup and Restore Section -->
@@ -99,6 +104,8 @@
       <p>Contact: <a href="https://wa.me/923124094969" target="_blank">WhatsApp</a></p>
       <p><a href="https://github.com/sharoon7171/Auto-Bookmark-Chrome-Extension" target="_blank">GitHub Repository</a></p>
     </div>
+
+    <!-- Keep the existing closing tags -->
   </div>
   <script src="options.js"></script>
 </body>
