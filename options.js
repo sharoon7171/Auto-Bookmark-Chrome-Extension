@@ -91,9 +91,9 @@ function createRuleElement(rule, index) {
       <option value="duplicate" ${rule.bookmarkAction === 'duplicate' ? 'selected' : ''}>Add Duplicate Bookmark</option>
     </select>
     <div class="rule-options">
-      <label><input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled"> Enabled</label>
-      <label><input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute"> Auto</label>
-      <label><input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab"> Close Tab</label>
+      <label><input type="checkbox" ${rule.enabled ? 'checked' : ''} data-field="enabled"><span>Enabled</span></label>
+      <label><input type="checkbox" ${rule.autoExecute ? 'checked' : ''} data-field="autoExecute"><span>Auto</span></label>
+      <label><input type="checkbox" ${rule.closeTab ? 'checked' : ''} data-field="closeTab"><span>Close Tab</span></label>
       <button class="deleteRule">Delete</button>
     </div>
   `;
@@ -389,3 +389,4 @@ async function restoreSettings() {
 
 // Initialize
 loadUndoRedoStacks();
+

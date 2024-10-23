@@ -19,17 +19,72 @@ h1, h2 {
   color: var(--primary-color);
 }
 
+/* Global options styling */
 #globalOptions {
-    background-color: #ffffff;
-    padding: 15px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+#globalOptions:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 #globalOptions label {
-    display: inline-block;
-    margin-right: 20px;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 20px;
+  font-size: 14px;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+/* Custom checkbox style for both global options and rule options */
+#globalOptions input[type="checkbox"],
+.rule-options input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--primary-color);
+  border-radius: 3px;
+  outline: none;
+  transition: all 0.3s ease;
+  position: relative;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+#globalOptions input[type="checkbox"]:checked,
+.rule-options input[type="checkbox"]:checked {
+  background-color: var(--primary-color);
+}
+
+#globalOptions input[type="checkbox"]:checked::before,
+.rule-options input[type="checkbox"]:checked::before {
+  content: '\2714';
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#globalOptions label:hover input[type="checkbox"],
+.rule-options label:hover input[type="checkbox"] {
+  border-color: var(--primary-color-dark);
+}
+
+#globalOptions label span,
+.rule-options label span {
+  margin-left: 5px;
 }
 
 .rule {
@@ -164,13 +219,13 @@ button:active, .btn:active {
   border-radius: 8px;
   margin-bottom: 20px;
   padding: 20px;
-  box-shadow: 0 10px 20px var(--shadow-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
 .rule-container:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px var(--shadow-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .rule-title-row, .rule {
@@ -415,5 +470,47 @@ input:checked + .slider:before {
 
 .how-to-use-item strong {
   color: var(--primary-color);
+}
+
+/* Custom checkbox style */
+.rule-options input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--primary-color);
+  border-radius: 3px;
+  outline: none;
+  transition: all 0.3s ease;
+  position: relative;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.rule-options input[type="checkbox"]:checked {
+  background-color: var(--primary-color);
+}
+
+.rule-options input[type="checkbox"]:checked::before {
+  content: '\2714';
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.rule-options label {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 15px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.rule-options label:hover input[type="checkbox"] {
+  border-color: var(--primary-color-dark);
 }
 
