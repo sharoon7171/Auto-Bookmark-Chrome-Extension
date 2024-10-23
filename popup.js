@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const autoCloseTabToggle = document.getElementById('autoCloseTab');
 
   // Load current settings
-  const result = await chrome.storage.sync.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab']);
+  const result = await chrome.storage.local.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab']);
   extensionEnabledToggle.checked = result.extensionEnabled ?? true;
   autoBookmarkToggle.checked = result.autoBookmark ?? true;
   autoCloseTabToggle.checked = result.autoCloseTab ?? false;
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Handle toggle changes
   function handleToggleChange(toggle, storageKey) {
     toggle.addEventListener('change', function() {
-      chrome.storage.sync.set({ [storageKey]: this.checked }, function() {
+      chrome.storage.local.set({ [storageKey]: this.checked }, function() {
         console.log(`${storageKey} is set to ${this.checked}`);
       });
     });

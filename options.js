@@ -43,11 +43,11 @@ function saveGlobalOptions() {
     autoBookmark: autoBookmarkCheckbox.checked,
     autoCloseTab: autoCloseTabCheckbox.checked
   };
-  chrome.storage.sync.set(options);
+  chrome.storage.local.set(options);
 }
 
 async function loadGlobalOptions() {
-  const result = await chrome.storage.sync.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab']);
+  const result = await chrome.storage.local.get(['extensionEnabled', 'autoBookmark', 'autoCloseTab']);
   extensionEnabledCheckbox.checked = result.extensionEnabled ?? true;
   autoBookmarkCheckbox.checked = result.autoBookmark ?? true;
   autoCloseTabCheckbox.checked = result.autoCloseTab ?? true;
@@ -136,13 +136,13 @@ function updateRule(index) {
     }
   });
   
-  chrome.storage.sync.get('rules', (data) => {
+  chrome.storage.local.get('rules', (data) => {
     const rules = data.rules || [];
     const oldRule = rules[index];
     undoStack.push({ action: 'update', index, oldRule });
     redoStack = [];
     rules[index] = rule;
-    chrome.storage.sync.set({rules}, () => {
+    chrome.storage.local.set({rules}, () => {
       console.log('Rule updated:', rule);
       showNotification('Rule updated', true);
     });
@@ -153,7 +153,7 @@ function undo() {
   if (undoStack.length === 0) return;
   
   const action = undoStack.pop();
-  chrome.storage.sync.get('rules', (data) => {
+  chrome.storage.local.get('rules', (data) => {
     let rules = data.rules || [];
     
     if (action.action === 'update') {
@@ -167,7 +167,7 @@ function undo() {
       rules.splice(action.index, 0, action.rule);
     }
     
-    chrome.storage.sync.set({rules}, displayRules);
+    chrome.storage.local.set({rules}, displayRules);
   });
 }
 
@@ -175,7 +175,7 @@ function redo() {
   if (redoStack.length === 0) return;
   
   const action = redoStack.pop();
-  chrome.storage.sync.get('rules', (data) => {
+  chrome.storage.local.get('rules', (data) => {
     let rules = data.rules || [];
     
     if (action.action === 'update') {
@@ -189,16 +189,16 @@ function redo() {
       rules.splice(action.index, 1);
     }
     
-    chrome.storage.sync.set({rules}, displayRules);
+    chrome.storage.local.set({rules}, displayRules);
   });
 }
 
 function deleteRule(index) {
-  chrome.storage.sync.get('rules', ({rules}) => {
+  chrome.storage.local.get('rules', ({rules}) => {
     undoStack.push({ action: 'delete', index, rule: rules[index] });
     redoStack = [];
     rules.splice(index, 1);
-    chrome.storage.sync.set({rules}, () => {
+    chrome.storage.local.set({rules}, () => {
       displayRules();
       showNotification('Rule deleted', false);
     });
@@ -207,7 +207,7 @@ function deleteRule(index) {
 
 function displayRules() {
   rulesContainer.innerHTML = '';
-  chrome.storage.sync.get('rules', (data) => {
+  chrome.storage.local.get('rules', (data) => {
     const rules = data.rules || [];
     rules.forEach((rule, index) => {
       const ruleElement = createRuleElement(rule, index);
@@ -217,7 +217,7 @@ function displayRules() {
 }
 
 function addNewRule() {
-  chrome.storage.sync.get('rules', ({rules = []}) => {
+  chrome.storage.local.get('rules', ({rules = []}) => {
     const newRule = {
       domain: '',
       contains: '',
@@ -231,7 +231,7 @@ function addNewRule() {
     undoStack.push({ action: 'add', rule: newRule });
     redoStack = [];
     rules.push(newRule);
-    chrome.storage.sync.set({rules}, () => {
+    chrome.storage.local.set({rules}, () => {
       displayRules();
       showNotification('New rule added', true);
     });
@@ -273,7 +273,7 @@ function clearUndoRedoStacks() {
 }
 
 async function loadAndDisplayRules() {
-  const data = await chrome.storage.sync.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
+  const data = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
   const rules = data.rules || [];
   extensionEnabledCheckbox.checked = data.extensionEnabled ?? true;
   autoBookmarkCheckbox.checked = data.autoBookmark ?? true;

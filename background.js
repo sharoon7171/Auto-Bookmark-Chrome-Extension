@@ -85,7 +85,7 @@ async function executeRule(rule, tab, globalAutoBookmark, globalAutoCloseTab) {
 
 // Function to execute rules
 async function executeRules(tab, isManual = false) {
-  const data = await chrome.storage.sync.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
+  const data = await chrome.storage.local.get(['rules', 'extensionEnabled', 'autoBookmark', 'autoCloseTab']);
   
   if (!data.extensionEnabled && !isManual) return false;
 
