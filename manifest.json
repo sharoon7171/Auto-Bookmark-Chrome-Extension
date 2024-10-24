@@ -3,6 +3,11 @@
   "name": "Smart Bookmark Saver",
   "version": "1.0.0",
   "description": "Automatically save and organize your bookmarks based on custom rules. Streamline your bookmarking process and keep your favorite sites tidy.",
+  "icons": {
+    "16": "icon500.png",
+    "48": "icon500.png",
+    "128": "icon500.png"
+  },
   "permissions": [
     "storage",
     "bookmarks",
@@ -14,6 +19,7 @@
     "type": "module"
   },
   "action": {
+    "default_icon": "icon500.png",
     "default_popup": "popup.html"
   },
   "options_page": "options.html?v=1",
