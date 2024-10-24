@@ -78,6 +78,40 @@ document.addEventListener('DOMContentLoaded', () => {
       safeAsyncFunction(loadSettings);
     }
   });
+
+  const bookmarkSearchInput = document.querySelector('.bookmark-search-input');
+  const bookmarkSearchResults = document.querySelector('.bookmark-search-results');
+
+  bookmarkSearchInput.addEventListener('input', () => {
+    const searchTerm = bookmarkSearchInput.value.toLowerCase();
+    updateBookmarkSearchResults(bookmarkSearchResults, searchTerm);
+  });
+
+  // Function to update search results
+  function updateBookmarkSearchResults(resultsDiv, searchTerm) {
+    resultsDiv.innerHTML = '';
+    const matchingFolders = bookmarkFolders.filter(folder => 
+      folder.title.toLowerCase().includes(searchTerm)
+    );
+
+    matchingFolders.forEach(folder => {
+      const folderElement = document.createElement('div');
+      folderElement.textContent = folder.title;
+      folderElement.className = 'search-result';
+      folderElement.addEventListener('click', () => {
+        bookmarkSearchInput.value = folder.title;
+        resultsDiv.style.display = 'none';
+      });
+      resultsDiv.appendChild(folderElement);
+    });
+
+    if (matchingFolders.length === 0) {
+      const noResultElement = document.createElement('div');
+      noResultElement.textContent = 'No matching folders found';
+      noResultElement.className = 'search-result no-result';
+      resultsDiv.appendChild(noResultElement);
+    }
+  }
 });
 
 async function loadSettings() {

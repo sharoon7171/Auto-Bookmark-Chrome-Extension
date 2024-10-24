@@ -195,6 +195,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ version: optionsVersion });
     return true; // Indicates we will send a response asynchronously
   }
+
+  if (request.action === "checkShortcut") {
+    checkShortcut(request.event).then(matchesShortcut => {
+      sendResponse({matchesShortcut: matchesShortcut});
+    });
+    return true; // Indicates we will send a response asynchronously
+  } else if (request.action === "customShortcut") {
+    executeRulesForActiveTab();
+    sendResponse({success: true});
+    return true; // Indicates we will send a response asynchronously
+  }
 });
 
 // Initialization
@@ -243,3 +254,49 @@ function executeRulesForActiveTab() {
     }
   });
 }
+
+function checkShortcut(eventData) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get('customShortcut', (result) => {
+      if (result.customShortcut) {
+        const keys = result.customShortcut.split('+');
+        const matchesShortcut = keys.every(key => {
+          if (key === 'Ctrl') return eventData.ctrlKey;
+          if (key === 'Alt') return eventData.altKey;
+          if (key === 'Shift') return eventData.shiftKey;
+          if (key === 'Meta') return eventData.metaKey;
+          return eventData.key.toUpperCase() === key;
+        });
+        resolve(matchesShortcut);
+      } else {
+        resolve(false);
+      }
+    });
+  });
+}
+
+// Add this function to your background.js file
+function handleContentScriptMessage(message, sender, sendResponse) {
+  if (message.action === "checkShortcut") {
+    checkShortcut(message.event).then(matchesShortcut => {
+      if (matchesShortcut) {
+        chrome.tabs.sendMessage(sender.tab.id, {
+          type: "FROM_EXTENSION",
+          action: "shortcutMatched"
+        });
+      }
+    });
+  } else if (message.action === "customShortcut") {
+    executeRulesForActiveTab();
+  }
+}
+
+// Modify your existing message listener in background.js
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "FROM_PAGE") {
+    handleContentScriptMessage(request, sender, sendResponse);
+    return true;
+  }
+  
+  // ... (rest of your existing message handling code)
+});

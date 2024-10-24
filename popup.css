@@ -203,6 +203,7 @@ h1 {
 }
 
 .bookmark-search-results {
+  display: block; /* Ensure results are visible */
   position: absolute;
   top: 100%;
   left: 0;
